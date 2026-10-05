@@ -152,7 +152,8 @@ function aboutForm(L, box, N) {
 /* Colour section: a ribbon of parallel strands that enters from the upper
  * left, sweeps across the top of the section and opens out to the right.
  * k = strand index offset from the ribbon centre (…, -1, 0, 1, …). */
-function waveRibbon(L, k, gap, N, ctrl) {
+/* flat: a calm ribbon that keeps its strands side by side, with no twist. */
+function waveRibbon(L, k, gap, N, ctrl, flat = false) {
   const { ax, ay } = L;
   const base = catmull(ctrl || [
     at(-ax - 0.5, -ay * 0.92, 0.3),
@@ -163,8 +164,8 @@ function waveRibbon(L, k, gap, N, ctrl) {
   ]);
   const fn = (t) => {
     const p = base(t);
-    const fan = 0.45 + 1.1 * t;
-    const tw = 0.4 + t * 1.6;
+    const fan = flat ? 0.85 + 0.3 * t : 0.45 + 1.1 * t;
+    const tw = flat ? 0.3 : 0.4 + t * 1.6;
     const off = k * gap * fan;
     return [p[0] - off * 0.18, p[1] + off * Math.cos(tw), p[2] + off * Math.sin(tw) * 1.2];
   };
@@ -270,11 +271,12 @@ const SHAPES = {
   sculpt:   { turns: 30, h: 1.3, prof: (v) => 0.22 + 0.2 * Math.sin(Math.PI * (0.12 + v * 0.8)) ** 1.4 - 0.05 * v, n: 12, round: 0.55, twist: 2.2 },
 };
 
-/* box = {x, y, s}; s scales the object; rot = {rx, ry}; z adds depth. */
-function objectForm(shape, box, rot, N, z = 0) {
+/* box = {x, y, s}; s scales the object; rot = {rx, ry}; z adds depth;
+ * turns overrides the layer count (more, thinner layers read as a finished print). */
+function objectForm(shape, box, rot, N, z = 0, turns = SHAPES[shape].turns) {
   const S = SHAPES[shape];
   const out = new Float32Array(N * 3);
-  const s = box.s, turns = S.turns, h = S.h;
+  const s = box.s, h = S.h;
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1);
     const a = t * turns * TAU;
@@ -291,7 +293,7 @@ function objectForm(shape, box, rot, N, z = 0) {
 }
 
 /* Layer pitch of an object in world units, used to size the strand so layers touch. */
-const layerPitch = (shape, s) => (SHAPES[shape].h * s) / SHAPES[shape].turns;
+const layerPitch = (shape, s, turns = SHAPES[shape].turns) => (SHAPES[shape].h * s) / turns;
 
 function mix(a, b, t, out) {
   const n = a.length;
@@ -501,7 +503,7 @@ class StrandRenderer {
     if (it.grad && it.gradAmt > 0) base = mixStops(base, it.grad, it.gradCycle ? f + (it.gradShift || 0) : f, it.gradCycle, it.gradAmt);
     const col = (m, add = 0) => [0, 1, 2].map((q) => (base[q] * m + add) * (1 - fogT) + fog[q] * fogT);
     const hl = it.matte ? 0.18 : 0.42;
-    return [col(lit * 0.5), col(lit * 0.92), col(lit * (1 - hl), 255 * hl * lit), col(1.1, 20)];
+    return [col(lit * 0.8), col(lit * 0.96), col(lit * (1 - hl), 255 * hl * lit), col(1.1, 20)];
   }
 
   /* A solid colour, or a gradient along the chunk when its two ends differ. */
@@ -722,7 +724,7 @@ function initSite({ getLenis = () => null } = {}) {
  * progress; between sections the director blends the end state of one section
  * into the start state of the next, so the page reads as one continuous shot.
  * A second canvas above the page carries only the parts of the strand that
- * pass in front of a product (the orbit rings around the spools).
+ * pass in front of a product (the orbit ring around the hero spool).
  */
 
 
@@ -799,7 +801,7 @@ MATERIALS.forEach((m, i) => {
   el.className = 'card';
   el.innerHTML = `
     <div class="card__tex"><img src="${texSrc(m.colour)}" width="960" height="260" loading="lazy" alt="Close-up of ${m.name} filament in ${COLOURS[m.colour].name}"></div>
-    <canvas class="card__obj" data-shape="${m.shape}" data-colour="${m.colour}" data-matte="${m.matte ? 1 : 0}" aria-hidden="true"></canvas>
+    <img class="card__obj" src="${spoolSrc(m.colour, true)}" width="560" height="679" loading="lazy" alt="" aria-hidden="true">
     <div class="card__body">
       <p class="card__top label"><span>Material ${String(i + 1).padStart(2, '0')}</span></p>
       <h3>${m.name}</h3>
@@ -815,20 +817,6 @@ MATERIALS.forEach((m, i) => {
     </div>`;
   rangeGrid.appendChild(el);
 });
-
-// Small printed samples that sit over each card's texture strip.
-function renderCardObjects() {
-  $$('.card__obj').forEach((cv) => {
-    if (!cv.clientWidth) return;
-    const r = new StrandRenderer(cv, { chunk: 4 });
-    r.resize(cv.clientWidth, cv.clientHeight);
-    const s = 1.5;
-    const pts = objectForm(cv.dataset.shape, { x: 0, y: 0.06, s }, { rx: 0.42, ry: 0.5 }, 620);
-    r.render([{ id: 'o', pts, color: rgbOf(cv.dataset.colour), alpha: 1, width: layerPitch(cv.dataset.shape, s) * 0.95, matte: cv.dataset.matte === '1', fogScale: 0.4 }], [17, 17, 19]);
-  });
-}
-(window.requestIdleCallback || setTimeout)(renderCardObjects);
-let cardT; addEventListener('resize', () => { clearTimeout(cardT); cardT = setTimeout(renderCardObjects, 250); });
 
 /* ==========================================================================
    Shared UI state: material + colour selection
@@ -1030,13 +1018,16 @@ function initMotion() {
     F.coil = coilForm(L, sb, N);
     F.wave = waveForm(L, sb, N);
     F.layer = layerForm(L, sb, N);
-    const ms = A['mats-spool'];
-    const mr = { x: ms.x, y: ms.y + ms.h * 0.2, rx: ms.w * (isMobile() ? 0.78 : 0.84), ry: ms.w * 0.19, roll: -0.08 };
-    F.matRingB = ringForm(mr, 'back', N);
-    F.matRingF = ringForm(mr, 'front', N);
     const gap = W0 * 1.9 * 1.12;
-    F.ribbon0 = waveRibbon(L, 0, gap, N);
-    F.ribbon = RIBBON_K.map((k) => waveRibbon(L, k, gap, NR));
+    // One long, gentle arc across the top of the Colour section: no dip, no twist.
+    const rib = [
+      at(-L.ax - 0.5, -L.ay * 0.42, 0.2),
+      at(-L.ax * 0.35, -L.ay * 0.6, 0.1),
+      at(L.ax * 0.35, -L.ay * 0.58, 0),
+      at(L.ax + 0.5, -L.ay * 0.36, -0.05),
+    ];
+    F.ribbon0 = waveRibbon(L, 0, gap, N, rib, true);
+    F.ribbon = RIBBON_K.map((k) => waveRibbon(L, k, gap, NR, rib, true));
   }
 
   const item = (id, pts, color, o = {}) => ({ id, pts, color, alpha: 1, width: W0, r0: 0, r1: 1, gradAmt: 0, ...o });
@@ -1052,7 +1043,7 @@ function initMotion() {
     const ringA = 1 - smooth(range(p, 0.04, 0.5));
     return {
       items: [
-        item('main', mix(F.hero, F.about, t), YELLOW, { r1: intro.v }),
+        item('main', mix(F.hero, F.about, t), YELLOW, { r1: intro.v, grad: SPECTRUM, gradAmt: 1 }),
         item('ringB', F.heroRingB, YELLOW, ringStyle({ r1: clamp01(intro.ring * 2), alpha: ringA })),
         item('ringF', F.heroRingF, YELLOW, ringStyle({ r1: clamp01(intro.ring * 2 - 1), alpha: ringA, front: true })),
       ],
@@ -1066,7 +1057,7 @@ function initMotion() {
     const rise = smooth(range(p, 0, 0.35));
     return {
       items: [
-        item('main', F.about, YELLOW),
+        item('main', F.about, YELLOW, { grad: SPECTRUM, gradAmt: 1 }),
         item('obj', objectForm('sculpt', { ...box, y: box.y + (1 - rise) * 0.08 }, { rx: 0.3, ry: 0.4 + p * 1.3 }, N), YELLOW,
           { grad: SCULPT, gradAmt: 1, width: layerPitch('sculpt', box.s) * 0.95, alpha: 0.35 + 0.65 * rise }),
       ],
@@ -1088,21 +1079,17 @@ function initMotion() {
     const a = storyForm(STORY_FORMS[i], p), b = storyForm(STORY_FORMS[i + 1], p);
     const pitch = layerPitch(STORY_OBJ, storyBox().s) * 0.95;
     const width = i < 3 ? W0 : lerp(W0, pitch, t);
-    return { items: [item('main', mix(a, b, t), YELLOW, { width })], env: env() };
+    return { items: [item('main', mix(a, b, t), YELLOW, { width, grad: SPECTRUM, gradAmt: 1 })], env: env() };
   }
 
   function matsState() {
     const m = MATERIALS[Math.max(0, matIndex)];
     return {
-      items: [
-        item('main', F.matRingB, YELLOW, ringStyle()),
-        item('ringF', F.matRingF, YELLOW, ringStyle({ front: true })),
-      ],
+      items: [],
       env: env({ glow: 1, glowRGB: rgbOf(m.colour) }),
     };
   }
 
-  const colourBox = () => ({ ...A['colour-sample'], s: A['colour-sample'].s * 1.1 });
   function colourState(p) {
     const open = smooth(range(p, 0, 0.12)) * (1 - smooth(range(p, 0.88, 1)));
     const WR = W0 * 1.9;
@@ -1114,10 +1101,6 @@ function initMotion() {
         r1: 0.02 + 0.98 * ease(range(p, 0.03 + d, 0.3 + d)),
       }));
     });
-    const sb = colourBox();
-    items.push(item('sample', objectForm('vase', sb, { rx: 0.42, ry: p * 4 }, N), colourRGB.cur, {
-      width: layerPitch('vase', sb.s) * 0.95, shadow: open * 0.8, alpha: smooth(range(p, 0.08, 0.18)) * (1 - smooth(range(p, 0.84, 0.92))),
-    }));
     return { items, env: env({ light: open, fog: mixRgb(DARK, SOFT, open) }) };
   }
 
@@ -1159,6 +1142,8 @@ function initMotion() {
     };
   }
 
+  // Applications show finished prints: many fine layers that close into a solid wall.
+  const appTurns = (shape) => Math.round(SHAPES[shape].turns * (isMobile() ? 2.4 : 3.2));
   function appsState(p) {
     const n = APPLICATIONS.length;
     const box = { ...A['apps-stage'], s: A['apps-stage'].s * 1.15 };
@@ -1169,10 +1154,11 @@ function initMotion() {
       const hold = 0.22;
       const z = d < -hold ? (-d - hold) * 9 : d > hold ? -(d - hold) * 5 : 0;
       const alpha = smooth(range(-d, 1.25, 0.6)) * (1 - smooth(range(d, 0.4, 0.72)));
-      const pts = objectForm(ap.shape, box, { rx: 0.42 - d * 0.12, ry: d * 0.9 + i }, N, z);
-      items.push(item('app' + i, pts, rgbOf(ap.colour), { width: layerPitch(ap.shape, box.s) * 0.95, alpha, matte: ap.colour === 'carbon' }));
+      const turns = appTurns(ap.shape);
+      const pts = objectForm(ap.shape, box, { rx: 0.42 - d * 0.12, ry: d * 0.9 + i }, turns * (isMobile() ? 40 : 52), z, turns);
+      items.push(item('app' + i, pts, rgbOf(ap.colour), { width: layerPitch(ap.shape, box.s, turns) * 1.15, alpha, matte: ap.colour === 'carbon', fogScale: 0.25 }));
     });
-    return { items, env: env({ space: 1 }) };
+    return { items, env: env() };
   }
 
   const emptyState = () => ({ items: [], env: env() });
