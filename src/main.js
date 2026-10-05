@@ -722,7 +722,7 @@ function initMotion() {
   gsap.from('.dia__strands rect', { scaleX: 0, transformOrigin: 'left center', duration: 1.4, stagger: 0.12, ease: 'power4.inOut', scrollTrigger: { trigger: '.tile--dim', start: 'top 75%' } });
   gsap.from('.dia__gauge', { opacity: 0, duration: 1, delay: 0.6, scrollTrigger: { trigger: '.tile--dim', start: 'top 75%' } });
   gsap.from('.batch i', { scaleX: 0, duration: 1.1, stagger: 0.05, ease: 'power3.inOut', scrollTrigger: { trigger: '.tile--col', start: 'top 80%' } });
-  gsap.fromTo('.macro img', { yPercent: 3 }, { yPercent: -3, ease: 'none', scrollTrigger: { trigger: '.tile--wind', start: 'top bottom', end: 'bottom top', scrub: true } });
+  gsap.fromTo('.tile__spool', { x: 0, xPercent: -50, rotate: -18 }, { x: 0, xPercent: -50, rotate: 10, ease: 'none', scrollTrigger: { trigger: '.tile--wind', start: 'top bottom', end: 'bottom top', scrub: true } });
   gsap.from('.choice li', { opacity: 0, y: 10, duration: 0.7, stagger: 0.05, ease: 'power3.out', scrollTrigger: { trigger: '.tile--choice', start: 'top 80%' } });
 
   // Range — cards rise in sequence
