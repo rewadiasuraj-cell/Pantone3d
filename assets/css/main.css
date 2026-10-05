@@ -288,18 +288,28 @@ main, .foot { position: relative; z-index: 2; }
   right: 9vw; width: min(27vw, 46vh); aspect-ratio: 1000 / 1205;
   top: calc(55% + min(27vw, 46vh) * 1.205 / 2 - min(27vw, 46vh) * .03);
 }
-.hero__floor::before {
-  content: ""; position: absolute; left: -45%; right: -45%; top: -6%; height: 34%;
-  background: linear-gradient(90deg, transparent, rgba(255,212,0,.5) 18%, rgba(255,46,99,.5) 40%, rgba(216,44,255,.45) 58%, rgba(19,140,255,.45) 78%, transparent);
-  filter: blur(34px); opacity: .55; border-radius: 50%;
-  -webkit-mask: radial-gradient(closest-side, #000 30%, transparent); mask: radial-gradient(closest-side, #000 30%, transparent);
+/* coloured light pooling on a glossy floor: a bright rainbow band at the foot,
+   streaking down as reflections, under a faint mirror image of the spool */
+.hero__floor::before, .hero__streaks b {
+  background: linear-gradient(90deg, transparent 2%, #ff6a00 16%, #ff2e63 32%, #d82cff 48%, #6a5cff 62%, #138cff 76%, #00d5c8 88%, transparent 98%);
+}
+.hero__floor::before { content: ""; position: absolute; left: -70%; right: -70%; top: -8%; height: 18%; border-radius: 50%; filter: blur(26px); opacity: .8; }
+/* the reflections: masked into uneven vertical streaks, then blurred as a whole so they smear softly */
+.hero__streaks { position: absolute; left: -70%; right: -70%; top: -4%; height: 75%; filter: blur(9px); opacity: .55; }
+.hero__streaks b {
+  position: absolute; inset: 0;
+  --streaks: repeating-linear-gradient(90deg, #000 0 14px, rgba(0,0,0,.15) 26px 40px, rgba(0,0,0,.8) 48px 56px, rgba(0,0,0,.1) 66px 84px, #000 92px 104px, rgba(0,0,0,.3) 116px 131px);
+  --fade: linear-gradient(transparent, #000 8%, rgba(0,0,0,.45) 40%, transparent 92%);
+  -webkit-mask: var(--streaks), var(--fade); -webkit-mask-composite: source-in;
+  mask: var(--streaks), var(--fade); mask-composite: intersect;
 }
 .hero__floor img {
-  position: relative; display: block; width: 100%; height: auto; transform: scaleY(-1); opacity: .32;
-  -webkit-mask: linear-gradient(to top, rgba(0,0,0,.9), transparent 42%); mask: linear-gradient(to top, rgba(0,0,0,.9), transparent 42%);
+  position: relative; z-index: 1; display: block; width: 100%; height: auto; transform: scaleY(-1); opacity: .3;
+  -webkit-mask: linear-gradient(to top, rgba(0,0,0,.9), transparent 40%); mask: linear-gradient(to top, rgba(0,0,0,.9), transparent 40%);
 }
-html[data-mode="light"] .hero__floor img { opacity: .22; }
-html[data-mode="light"] .hero__floor::before { opacity: .35; }
+html[data-mode="light"] .hero__floor img { opacity: .2; }
+html[data-mode="light"] .hero__floor::before { opacity: .4; }
+html[data-mode="light"] .hero__streaks { opacity: .22; }
 .hero__cue {
   position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%);
   color: var(--dim); display: flex; flex-direction: column; align-items: center; gap: 12px; white-space: nowrap; font-size: 11px;
