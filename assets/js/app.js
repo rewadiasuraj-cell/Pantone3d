@@ -1393,7 +1393,9 @@ function initMotion() {
     const top = lerp(T.hero.y, T.about.y, t) + (y > a1 ? a1 - y : 0);
     if (top < -T.hero.h * 1.2) { travel.style.opacity = '0'; return; }
     travel.style.opacity = '1';
-    travel.style.transform = `translate3d(${x.toFixed(1)}px, ${top.toFixed(1)}px, 0) rotate(${(y * 0.12).toFixed(2)}deg)`;
+    // turns left and right about its upright axis; never tips over
+    const turn = 32 * Math.sin((y / innerHeight) * 1.7);
+    travel.style.transform = `translate3d(${x.toFixed(1)}px, ${top.toFixed(1)}px, 0) perspective(1400px) rotateY(${turn.toFixed(2)}deg)`;
   }
 
   // Story
