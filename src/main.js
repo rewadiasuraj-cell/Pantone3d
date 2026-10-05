@@ -582,7 +582,8 @@ function initMotion() {
   const heroScroll = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
     .to(heroTitleLines, { y: () => -innerHeight * 0.08, opacity: 0, duration: 0.6, stagger: 0.06 }, 0.1)
     .to([heroEyebrow, heroLede, heroCtas], { y: -30, opacity: 0, duration: 0.4, stagger: 0.04 }, 0)
-    .to(heroCue, { opacity: 0, duration: 0.1 }, 0);
+    .to(heroCue, { opacity: 0, duration: 0.1 }, 0)
+    .to('.hero__floor', { opacity: 0, duration: 0.12 }, 0);
   function heroUpdate(p) { if (heroScroll.progress() !== p) heroScroll.progress(p); }
 
   if (finePointer) {
