@@ -291,7 +291,37 @@ main, .foot { position: relative; z-index: 2; }
 @keyframes cue { 0%, 100% { transform: translateY(0); opacity: .3; } 50% { transform: translateY(6px); opacity: 1; } }
 
 .spool-travel { position: fixed; left: 0; top: 0; z-index: 2; pointer-events: none; visibility: hidden; will-change: transform; }
-.spool-travel img { width: 100%; height: 100%; object-fit: contain; }
+.spool-travel__photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+/* the built 3D spool: --D flange diameter, drum depth .42D, filament radius .45D */
+.s3d { position: absolute; inset: 0; perspective: 1600px; opacity: 0; display: grid; place-items: center; }
+.s3d__body { position: relative; width: var(--D); height: var(--D); transform-style: preserve-3d; --W: calc(var(--D) * .42); --R: calc(var(--D) * .44); }
+.s3d__flange {
+  position: absolute; inset: 0; border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 21.5%, rgba(255,255,255,.07) 21.5% 22.5%, transparent 22.5% 100%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 2px, transparent 2px 4px),
+    radial-gradient(circle at 38% 32%, #3a3a3d, #1c1c1e 70%);
+  box-shadow: inset 0 0 0 calc(var(--D) * .012) #111, inset 0 0 0 calc(var(--D) * .02) #2c2c2f;
+  backface-visibility: visible;
+}
+.s3d__flange--front { transform: translateZ(calc(var(--W) / 2)); }
+.s3d__flange--back { transform: translateZ(calc(var(--W) / -2)) rotateY(180deg); }
+.s3d__hub { position: absolute; left: 50%; top: 50%; width: 24%; height: 24%; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, #050505 0 58%, #2a2a2c 60% 100%); box-shadow: 0 0 0 calc(var(--D) * .012) #151517; }
+.s3d__win { position: absolute; top: 46%; width: 15%; height: 8%; border-radius: 99px; background: linear-gradient(180deg, #4fe3ff, #138CFF); box-shadow: inset 0 2px 3px rgba(255,255,255,.35), inset 0 -3px 4px rgba(0,0,0,.35); }
+.s3d__win--l { left: 14%; }
+.s3d__win--r { right: 14%; }
+.s3d__logo { position: absolute; left: 50%; top: 15%; transform: translateX(-50%) rotate(-8deg); font: 300 calc(var(--D) * .1)/1 var(--display-font); letter-spacing: -.02em; color: #0d0d0e; text-shadow: 0 1px 0 rgba(255,255,255,.08); }
+.s3d__drum { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
+.s3d__drum i {
+  position: absolute; left: calc(var(--D) * -.0305); top: calc(var(--W) / -2);
+  width: calc(var(--D) * .061); height: var(--W);
+  transform: rotateZ(var(--a)) translateY(calc(var(--R) * -1)) rotateX(90deg);
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.22) 0 1px, transparent 1px calc(var(--D) * .012)),
+    linear-gradient(90deg, rgb(var(--c)), rgb(var(--c)));
+  backface-visibility: visible;
+}
+.s3d__core { display: none; }
 html.static .spool-travel { display: none; }
 
 /* ---------------------------------------------------------------- 01 about (home) */
