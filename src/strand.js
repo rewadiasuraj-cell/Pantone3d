@@ -37,7 +37,9 @@ export class StrandRenderer {
     ctx.clearRect(0, 0, this.W, this.H);
     const chunks = [];
 
+    let order = 0;
     for (const it of items) {
+      const io = order++;
       if (!it || it.alpha <= 0.004) continue;
       const P = it.pts;
       const n = P.length / 3;
@@ -63,11 +65,13 @@ export class StrandRenderer {
         const tx = P[e * 3] - P[s * 3], tz = P[e * 3 + 2] - P[s * 3 + 2];
         const tl = Math.hypot(tx, tz) || 1;
         const facing = Math.abs((tz / tl) * LIGHT[0] + (-tx / tl) * LIGHT[2]);
-        chunks.push({ xy, z: zs / c, k: ks / c, it, facing });
+        chunks.push({ xy, z: zs / c, b: Math.floor((zs / c) / 0.04), io, k: ks / c, it, facing, f: (s + e) / 2 / (n - 1) });
       }
     }
 
-    chunks.sort((a, b) => b.z - a.z);
+    // Back to front in thin depth slabs; inside a slab keep each strand together,
+    // so separate strands that share a depth range don't break each other into beads.
+    chunks.sort((a, b) => (b.b - a.b) || (a.io - b.io) || (b.z - a.z));
 
     // Style each chunk once.
     for (const ch of chunks) {
@@ -75,7 +79,8 @@ export class StrandRenderer {
       ch.w = Math.max(0.6, it.width * u * ch.k);
       const fogT = Math.min(0.72, Math.max(0, (ch.z + 0.3) / 5.5)) * (it.fogScale ?? 1);
       const lit = 0.62 + 0.38 * ch.facing;
-      const base = it.color;
+      let base = it.color;
+      if (it.grad && it.gradAmt > 0) base = mixStops(base, it.grad, it.gradCycle ? ch.f + (it.gradShift || 0) : ch.f, it.gradCycle, it.gradAmt);
       const col = (m, add = 0) => {
         const r = (base[0] * m + add) * (1 - fogT) + fog[0] * fogT;
         const g = (base[1] * m + add) * (1 - fogT) + fog[1] * fogT;
@@ -84,6 +89,7 @@ export class StrandRenderer {
       };
       const hl = it.matte ? 0.18 : 0.42;
       ch.c = [col(lit * 0.5), col(lit * 0.92), col(lit * (1 - hl), 255 * hl * lit)];
+      if (it.glow) ch.g = col(1.1, 20);
     }
 
     // Draw in small groups of near-equal depth: each pass runs across the whole
@@ -93,12 +99,32 @@ export class StrandRenderer {
     let g0 = 0;
     while (g0 < chunks.length) {
       let g1 = g0 + 1;
-      while (g1 < chunks.length && g1 - g0 < 40 && chunks[g1].it === chunks[g0].it && chunks[g0].z - chunks[g1].z < 0.045) g1++;
-      for (let pass = 0; pass < 3; pass++) {
+      while (g1 < chunks.length && g1 - g0 < 40 && chunks[g1].it === chunks[g0].it && chunks[g0].b === chunks[g1].b) g1++;
+      for (let pass = -1; pass < 3; pass++) {
         for (let c = g0; c < g1; c++) {
           const ch = chunks[c];
           const w = ch.w;
-          ctx.globalAlpha = ch.it.alpha;
+          const it = ch.it;
+          if (pass === -1) {
+            // soft halo for light trails, or a contact shadow on light backgrounds
+            if (it.glow) {
+              ctx.globalAlpha = it.alpha * it.glow * 0.16;
+              this._poly(ch.xy, 0, 0);
+              ctx.lineWidth = w * 4.5;
+              ctx.strokeStyle = ch.g;
+              ctx.stroke();
+            } else if (it.shadow) {
+              ctx.globalAlpha = it.alpha * it.shadow;
+              this._poly(ch.xy, w * 0.35, w * 0.9);
+              ctx.lineWidth = w * 1.5;
+              ctx.lineCap = 'butt'; // no doubled alpha where chunks meet
+              ctx.strokeStyle = 'rgba(40,32,20,0.16)';
+              ctx.stroke();
+              ctx.lineCap = 'round';
+            }
+            continue;
+          }
+          ctx.globalAlpha = it.alpha;
           if (pass === 2) {
             if (w <= 2.2) continue;
             const off = -w * 0.17;
@@ -123,6 +149,15 @@ export class StrandRenderer {
     ctx.moveTo(xy[0] + ox, xy[1] + oy);
     for (let i = 2; i < xy.length; i += 2) ctx.lineTo(xy[i] + ox, xy[i + 1] + oy);
   }
+}
+
+/* Colour at f (0–1) along a list of RGB stops, mixed into base by amt. */
+function mixStops(base, stops, f, cycle, amt) {
+  const n = cycle ? stops.length : stops.length - 1;
+  f = cycle ? ((f % 1) + 1) % 1 : Math.min(1, Math.max(0, f));
+  const x = f * n, i = Math.floor(x) % stops.length, j = (i + 1) % stops.length, u = x - Math.floor(x);
+  const a = stops[i], b = stops[cycle ? j : Math.min(stops.length - 1, i + 1)];
+  return [0, 1, 2].map((q) => base[q] + ((a[q] + (b[q] - a[q]) * u) - base[q]) * amt);
 }
 
 export const hexToRgb = (h) => {
