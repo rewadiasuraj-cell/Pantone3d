@@ -1,12 +1,23 @@
 /* Pantone3D — site content.
  *
- * [VERIFY] Everything in this file must be confirmed against the live Pantone3D
- * catalogue before launch: which materials are sold, which colours exist per
- * material, and the wording of each description. Descriptions are deliberately
+ * To confirm with Pantone3D before launch (tracked in README, never shown on the
+ * page): which materials are sold, which colours exist per material, the swatch
+ * values, and the wording of each description. Descriptions are deliberately
  * qualitative (no temperatures, tolerances, strengths or certifications).
  */
 
-export const BRAND_YELLOW = '#F7B102'; // sampled from supplied product photography — [VERIFY] official value
+/* Contact details. Leave a value empty and that item stays hidden everywhere
+ * (footer, nav "Contact" link, "Contact us" buttons). Only add real details. */
+export const CONTACT = {
+  email: '',
+  phone: '',
+  address: '',
+  instagram: '',
+  linkedin: '',
+  youtube: '',
+};
+
+export const BRAND_YELLOW = '#F7B102'; // sampled from supplied product photography; confirm official value
 
 export const COLOURS = {
   black:   { name: 'Black',        hex: '#1C1C1E' },
@@ -21,7 +32,7 @@ export const COLOURS = {
   carbon:  { name: 'Carbon Black', hex: '#2E2F32' },
 };
 
-/* Colour story (section 04) — shown on PLA+. */
+/* Colour section — shown on PLA+. */
 export const COLOUR_STORY = ['black', 'white', 'grey', 'red', 'orange', 'yellow', 'green', 'blue'];
 
 export const MATERIALS = [
@@ -29,7 +40,7 @@ export const MATERIALS = [
     id: 'pla-plus', name: 'PLA+', line: 'Everyday reliability.',
     desc: 'Reliable everyday material for clean, precise printing.',
     bestFor: 'Everyday prints · Prototypes · Display models',
-    traits: ['Smooth finish', 'Easy printing', 'Strong colour'],
+    traits: ['Smooth flow', 'Clean finish', 'Consistent colour'],
     colour: 'yellow', shape: 'vase', matte: false,
     colours: ['black', 'white', 'grey', 'red', 'orange', 'yellow', 'green', 'blue'],
   },
@@ -78,10 +89,14 @@ export const MATERIALS = [
 export const APPLICATIONS = [
   { name: 'Prototyping',       note: 'Test form and fit before committing to production.', shape: 'hexbox',  colour: 'grey' },
   { name: 'Product Design',    note: 'Presentation models with a considered finish.',     shape: 'lamp',    colour: 'white' },
-  { name: 'Maker Projects',    note: 'From weekend builds to ongoing projects.',          shape: 'star',    colour: 'orange' },
   { name: 'Education',         note: 'Tangible objects for learning by making.',          shape: 'gear',    colour: 'blue' },
+  { name: 'Maker Projects',    note: 'From weekend builds to ongoing projects.',          shape: 'star',    colour: 'orange' },
   { name: 'Functional Parts',  note: 'Parts that are meant to be used, not just seen.',   shape: 'bushing', colour: 'carbon' },
   { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', colour: 'red' },
 ];
 
 export const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp`;
+/* Close-up of the wound filament, cropped from the same product photography. */
+export const texSrc = (colour) => `assets/img/tex-${colour}.webp`;
+
+export const hasContact = () => Object.values(CONTACT).some(Boolean);
