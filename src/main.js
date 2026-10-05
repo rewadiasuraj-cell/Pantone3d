@@ -5,10 +5,10 @@
  * progress; between sections the director blends the end state of one section
  * into the start state of the next, so the page reads as one continuous shot.
  * A second canvas above the page carries only the parts of the strand that
- * pass in front of a product (the orbit ring around the hero spool).
+ * pass in front of a product.
  */
 import {
-  heroForm, aboutForm, ringForm, waveRibbon, straightForm, coilForm, waveForm, layerForm, objectForm, layerPitch, SHAPES,
+  heroForm, aboutForm, iconForm, waveRibbon, straightForm, coilForm, waveForm, layerForm, objectForm, layerPitch, SHAPES,
   mix, ease, smooth, range, lerp, clamp01, catmull, path, at, TAU,
 } from './forms.js';
 import { StrandRenderer, hexToRgb } from './strand.js';
@@ -28,8 +28,9 @@ const isMobile = () => mqMobile.matches;
 const YELLOW = hexToRgb(BRAND_YELLOW);
 const DARK = [8, 8, 8];
 const SOFT = [245, 244, 239];
+// The page colour the strand fades into with depth: follows the light / dark switch.
+const baseFog = () => (root.dataset.mode === 'light' ? SOFT : DARK);
 const SPECTRUM = ['#FFD400', '#FF8A00', '#FF2E63', '#D82CFF', '#6A5CFF', '#138CFF', '#00D5C8'].map(hexToRgb);
-const SCULPT = ['#1A1A1C', '#3A2A1A', '#E07A10', '#F7B102', '#FFD400'].map(hexToRgb); // bottom → top
 const rgbOf = (key) => hexToRgb(COLOURS[key].hex);
 const mixRgb = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
 const lum = (c) => (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
@@ -75,7 +76,7 @@ MATERIALS.forEach((m, i) => {
   const a = accentOf(m.colour);
   b.style.setProperty('--c', `rgb(${a.join(',')})`);
   b.style.setProperty('--c-rgb', a.join(','));
-  b.innerHTML = `<img src="${spoolSrc(m.colour, true)}" width="560" height="679" alt="" loading="lazy"><span><b>${m.name}</b><small>${m.line}</small></span>`;
+  b.innerHTML = `<img src="${spoolSrc(m.colour, true)}" width="560" height="675" alt="" loading="lazy"><span><b>${m.name}</b><small>${m.line}</small></span>`;
   tabWrap.appendChild(b);
 });
 
@@ -86,7 +87,7 @@ MATERIALS.forEach((m, i) => {
   el.className = 'card';
   el.innerHTML = `
     <div class="card__tex"><img src="${texSrc(m.colour)}" width="960" height="260" loading="lazy" alt="Close-up of ${m.name} filament in ${COLOURS[m.colour].name}"></div>
-    <img class="card__obj" src="${spoolSrc(m.colour, true)}" width="560" height="679" loading="lazy" alt="" aria-hidden="true">
+    <img class="card__obj" src="${spoolSrc(m.colour, true)}" width="560" height="675" loading="lazy" alt="" aria-hidden="true">
     <div class="card__body">
       <p class="card__top label"><span>Material ${String(i + 1).padStart(2, '0')}</span></p>
       <h3>${m.name}</h3>
@@ -232,8 +233,8 @@ function renderStaticForms() {
     const s = 1.45;
     const pts = objectForm(shape, { x: 0, y: 0, s }, { rx: 0.42, ry: 0.4 }, 760);
     const it = { id: 's', pts, color: YELLOW, alpha: 1, width: layerPitch(shape, s) * 0.95 };
-    if (shape === 'sculpt') Object.assign(it, { grad: SCULPT, gradAmt: 1 });
-    r.render([it], DARK);
+    if (shape === 'sculpt') Object.assign(it, { grad: SPECTRUM, gradAmt: 1 });
+    r.render([it], baseFog());
   });
 }
 
@@ -241,7 +242,8 @@ if (reduced) {
   root.classList.add('ready');
   renderStaticForms();
   let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(renderStaticForms, 200); });
-  ScrollTrigger.create({ trigger: '.colour', start: 'top 40px', end: 'bottom 40px', onToggle: (s) => { nav.dataset.theme = s.isActive ? 'light' : 'dark'; } });
+  addEventListener('modechange', renderStaticForms);
+  ScrollTrigger.create({ trigger: '.colour', start: 'top 40px', end: 'bottom 40px', onToggle: (s) => { nav.dataset.theme = s.isActive || root.dataset.mode === 'light' ? 'light' : 'dark'; } });
 } else {
   initMotion();
 }
@@ -294,10 +296,7 @@ function initMotion() {
     });
     const hs = A['hero-spool'];
     F.hero = heroForm(L, { x: hs.x, y: hs.y, r: hs.w / 2 }, N);
-    const hr = { x: hs.x - hs.w * 0.02, y: hs.y + hs.h * 0.05, rx: hs.w * (isMobile() ? 0.66 : 0.62), ry: hs.w * 0.17, roll: -0.12 };
-    F.heroRingB = ringForm(hr, 'back', N);
-    F.heroRingF = ringForm(hr, 'front', N);
-    F.about = aboutForm(L, aboutBox(), N);
+    { const b = aboutBox(); F.about = aboutForm(L, b, N, at(b.x, b.y, 1.7)); }
     const sb = A['story-stage'];
     F.straight = straightForm(L, sb.y, N);
     F.coil = coilForm(L, sb, N);
@@ -316,38 +315,26 @@ function initMotion() {
   }
 
   const item = (id, pts, color, o = {}) => ({ id, pts, color, alpha: 1, width: W0, r0: 0, r1: 1, gradAmt: 0, ...o });
-  const env = (o = {}) => ({ glow: 0, glowRGB: YELLOW, space: 0, light: 0, fog: DARK, ...o });
+  const env = (o = {}) => ({ glow: 0, glowRGB: YELLOW, space: 0, light: 0, fog: baseFog(), ...o });
   let clock = 0;
-  const ringStyle = (o = {}) => ({ grad: SPECTRUM, gradAmt: 1, gradCycle: true, gradShift: clock * 0.025, glow: 1, width: W0 * 0.42, ...o });
 
   // ---------------------------------------------------------------- section states
-  const intro = { v: 0, ring: 0, glow: 0 };
+  const intro = { v: 0, glow: 0 };
 
   function heroState(p) {
     const t = ease(range(p, 0.12, 0.95));
-    const ringA = 1 - smooth(range(p, 0.04, 0.5));
     return {
       items: [
         item('main', mix(F.hero, F.about, t), YELLOW, { r1: intro.v, grad: SPECTRUM, gradAmt: 1 }),
-        item('ringB', F.heroRingB, YELLOW, ringStyle({ r1: clamp01(intro.ring * 2), alpha: ringA })),
-        item('ringF', F.heroRingF, YELLOW, ringStyle({ r1: clamp01(intro.ring * 2 - 1), alpha: ringA, front: true })),
       ],
       env: env({ glow: intro.glow * (1 - range(p, 0.3, 0.9)) }),
     };
   }
 
+  // About: the strand follows the travelling spool down and slips in behind it.
   function aboutBox() { const a = A['about-obj']; return { x: a.x, y: a.y, s: Math.min(a.w * 1.2, a.h * 0.78) }; }
-  function aboutState(p) {
-    const box = aboutBox();
-    const rise = smooth(range(p, 0, 0.35));
-    return {
-      items: [
-        item('main', F.about, YELLOW, { grad: SPECTRUM, gradAmt: 1 }),
-        item('obj', objectForm('sculpt', { ...box, y: box.y + (1 - rise) * 0.08 }, { rx: 0.3, ry: 0.4 + p * 1.3 }, N), YELLOW,
-          { grad: SCULPT, gradAmt: 1, width: layerPitch('sculpt', box.s) * 0.95, alpha: 0.35 + 0.65 * rise }),
-      ],
-      env: env({ glow: 0.55, glowRGB: [224, 122, 16] }),
-    };
+  function aboutState() {
+    return { items: [item('main', F.about, YELLOW, { grad: SPECTRUM, gradAmt: 1 })], env: env({ glow: 0.35, glowRGB: [150, 70, 200] }) };
   }
 
   const STORY_FORMS = ['straight', 'wave', 'coil', 'layer', 'obj'];
@@ -386,11 +373,11 @@ function initMotion() {
         r1: 0.02 + 0.98 * ease(range(p, 0.03 + d, 0.3 + d)),
       }));
     });
-    return { items, env: env({ light: open, fog: mixRgb(DARK, SOFT, open) }) };
+    return { items, env: env({ light: open, fog: mixRgb(baseFog(), SOFT, open) }) };
   }
 
   const buildBox = () => ({ x: A['build-stage'].x, y: A['build-stage'].y + A['build-stage'].h * 0.08, s: A['build-stage'].w * 1.25 });
-  let buildHead = null;
+  let buildHead = null, buildBed = null;
   function buildState(p) {
     const box = buildBox();
     const grow = smooth(range(p, 0.85, 1));
@@ -399,16 +386,22 @@ function initMotion() {
     const hi = Math.min(N - 1, Math.max(0, Math.round(reveal * (N - 1))));
     const hx = obj[hi * 3], hy = obj[hi * 3 + 1], hz = obj[hi * 3 + 2];
     const top = A['build-stage'].y - A['build-stage'].h * 0.62;
+    // The feed drops in from above, right of the copy, so it never crosses the text.
+    const fx = isMobile() ? 0.62 : 0.32;
     const feed = path([{
       fn: catmull([
-        at(-L.ax - 0.4, top, 0), at(lerp(-L.ax, hx, 0.55), top, 0),
-        [hx - 0.12, top + 0.01, hz * 0.6], [hx, top + 0.14, hz], [hx, hy - 0.07, hz],
+        at(hx + fx, -L.ay - 0.3, 0), at(hx + fx * 0.75, top - 0.1, 0),
+        [hx + fx * 0.25, top + 0.04, hz * 0.5], [hx, top + 0.22, hz], [hx, hy - 0.08, hz],
       ]),
       w: 1,
     }], N);
     const toFeed = ease(range(p, 0.02, 0.18));
     const feedAlpha = 1 - smooth(range(p, 0.86, 0.96));
     buildHead = R.project(hx, hy, hz);
+    // The print bed: a disc just under the object's first layer.
+    const rx = 0.42, foot = SHAPES.vase.h * box.s * 0.5, rad = SHAPES.vase.prof(0) * box.s * 1.75;
+    const bc = R.project(box.x, box.y + foot * Math.cos(rx), foot * Math.sin(rx));
+    buildBed = [bc[0], bc[1], rad * L.u * bc[2] * 2, Math.sin(rx), smooth(range(p, 0.1, 0.24)) * (1 - smooth(range(p, 0.9, 1)))];
     buildHead.push(smooth(range(p, 0.16, 0.26)) * feedAlpha, Math.round(reveal * 22));
     return {
       items: [
@@ -427,23 +420,20 @@ function initMotion() {
     };
   }
 
-  // Applications show finished prints: many fine layers that close into a solid wall.
-  const appTurns = (shape) => Math.round(SHAPES[shape].turns * (isMobile() ? 2.4 : 3.2));
+  // Applications: no printed objects. One spectrum strand redraws itself as a
+  // simple line drawing for each use, holding, then reshaping into the next.
+  const appBox = () => ({ x: A['apps-stage'].x, y: A['apps-stage'].y, s: A['apps-stage'].s * 0.6 });
+  const appIcon = (i, p) => iconForm(APPLICATIONS[i].icon, appBox(), { ry: Math.sin(p * 9 + i) * 0.18, rx: 0.08 }, N);
   function appsState(p) {
     const n = APPLICATIONS.length;
-    const box = { ...A['apps-stage'], s: A['apps-stage'].s * 1.15 };
-    const items = [];
-    APPLICATIONS.forEach((ap, i) => {
-      const d = (p * n - (i + 0.5));
-      if (d < -1.25 || d > 0.75) return;
-      const hold = 0.22;
-      const z = d < -hold ? (-d - hold) * 9 : d > hold ? -(d - hold) * 5 : 0;
-      const alpha = smooth(range(-d, 1.25, 0.6)) * (1 - smooth(range(d, 0.4, 0.72)));
-      const turns = appTurns(ap.shape);
-      const pts = objectForm(ap.shape, box, { rx: 0.42 - d * 0.12, ry: d * 0.9 + i }, turns * (isMobile() ? 40 : 52), z, turns);
-      items.push(item('app' + i, pts, rgbOf(ap.colour), { width: layerPitch(ap.shape, box.s, turns) * 1.15, alpha, matte: ap.colour === 'carbon', fogScale: 0.25 }));
-    });
-    return { items, env: env() };
+    const u = Math.min(n - 1, Math.max(0, p * n - 0.5));
+    const i = Math.min(n - 2, Math.floor(u));
+    const t = ease(range(u - i, 0.3, 0.75));
+    const pts = t <= 0 ? appIcon(i, p) : t >= 1 ? appIcon(i + 1, p) : mix(appIcon(i, p), appIcon(i + 1, p), t);
+    return {
+      items: [item('app', pts, YELLOW, { grad: SPECTRUM, gradAmt: 1, width: W0 * 1.25, r1: ease(range(p * n, 0.02, 0.4)), shadow: 0.6 })],
+      env: env(),
+    };
   }
 
   const emptyState = () => ({ items: [], env: env() });
@@ -534,7 +524,7 @@ function initMotion() {
     const o = e.light;
     const clip = o <= 0.001 ? 'ellipse(0% 0% at 58% -12%)' : `ellipse(${(o * 104).toFixed(2)}% ${(o * 158).toFixed(2)}% at 58% -12%)`;
     if (envCache.clip !== clip) { envEls.light.style.clipPath = clip; envCache.clip = clip; }
-    const theme = e.light > 0.55 ? 'light' : 'dark';
+    const theme = e.light > 0.55 || root.dataset.mode === 'light' ? 'light' : 'dark';
     if (nav.dataset.theme !== theme) nav.dataset.theme = theme;
   }
 
@@ -549,6 +539,7 @@ function initMotion() {
       const p = clamp01((y - s.st.start) / Math.max(1, s.st.end - s.st.start));
       if (y >= s.st.start - vh() && y <= s.st.end + vh()) s.update(p, y);
     });
+    travelUpdate(y);
     const S = stateAt(y);
     applyEnv(S.env);
     const back = [], fr = [];
@@ -570,8 +561,6 @@ function initMotion() {
   const heroCtas = $('.hero__ctas');
 
   const heroScroll = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
-    .to(heroSpool, { scale: 1.18, rotate: -7, xPercent: 6, yPercent: -4, duration: 1 }, 0)
-    .to(heroSpool, { opacity: 0, duration: 0.35 }, 0.62)
     .to(heroTitleLines, { y: () => -innerHeight * 0.08, opacity: 0, duration: 0.6, stagger: 0.06 }, 0.1)
     .to([heroEyebrow, heroLede, heroCtas], { y: -30, opacity: 0, duration: 0.4, stagger: 0.04 }, 0)
     .to(heroCue, { opacity: 0, duration: 0.1 }, 0);
@@ -586,6 +575,38 @@ function initMotion() {
       const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;
       ry(nx * 3); rx(-ny * 2.4); tx(nx * 8); // ≤ 1.5° / 1.2°
     });
+  }
+
+  // The hero spool travels: it slides down into About, rolling as the page
+  // scrolls, rests there while About is pinned, then leaves with the section.
+  const travel = document.createElement('div');
+  travel.className = 'spool-travel';
+  travel.setAttribute('aria-hidden', 'true');
+  travel.innerHTML = `<img src="${heroImg.currentSrc || heroImg.src}" alt="">`;
+  document.body.appendChild(travel);
+  const heroWrap = $('.hero__spool');
+  let T = null;
+  function measureTravel() {
+    const rel = (el, sec) => { const r = el.getBoundingClientRect(), q = sec.getBoundingClientRect(); return { x: r.left - q.left, y: r.top - q.top, w: r.width, h: r.height }; };
+    const h = rel(heroWrap, sections.hero), a = rel($('.about__stage'), sections.about);
+    // same size as in the hero, centred on the About stage
+    T = { hero: h, about: { x: a.x + a.w / 2 - h.w / 2, y: a.y + a.h / 2 - h.h / 2, w: h.w, h: h.h } };
+    travel.style.width = `${h.w}px`; travel.style.height = `${h.h}px`;
+  }
+  let travelOn = null;
+  function travelUpdate(y) {
+    if (!T) return;
+    const on = y > 2;
+    if (on !== travelOn) { travelOn = on; travel.style.visibility = on ? 'visible' : 'hidden'; heroWrap.style.visibility = on ? 'hidden' : 'visible'; }
+    if (!on) return;
+    const a0 = aboutST.start, a1 = aboutST.end;
+    // glide across the screen while About rises underneath, then leave with it
+    const t = ease(range(y, 0, a0));
+    const x = lerp(T.hero.x, T.about.x, t);
+    const top = lerp(T.hero.y, T.about.y, t) + (y > a1 ? a1 - y : 0);
+    if (top < -T.hero.h * 1.2) { travel.style.opacity = '0'; return; }
+    travel.style.opacity = '1';
+    travel.style.transform = `translate3d(${x.toFixed(1)}px, ${top.toFixed(1)}px, 0) rotate(${(y * 0.12).toFixed(2)}deg)`;
   }
 
   // Story
@@ -625,6 +646,7 @@ function initMotion() {
 
   // Build
   const nozzle = $('.nozzle');
+  const bed = $('.build__bed');
   const steps = $$('.build__steps li');
   const zCount = $('.build__z b');
   let buildIdx = -1, lastZ = -1;
@@ -633,9 +655,17 @@ function initMotion() {
     if (idx !== buildIdx) { buildIdx = idx; steps.forEach((s, i) => s.classList.toggle('is-on', i === idx)); }
     if (buildHead) {
       const [x, y, , a, z] = buildHead;
-      nozzle.style.transform = `translate3d(${(x - 13).toFixed(1)}px, ${(y - 37).toFixed(1)}px, 0)`;
+      const nw = nozzle.offsetWidth;
+      nozzle.style.transform = `translate3d(${(x - nw / 2).toFixed(1)}px, ${(y - nw * 1.57).toFixed(1)}px, 0)`;
       nozzle.style.opacity = a.toFixed(3);
       if (z !== lastZ) { lastZ = z; zCount.textContent = String(z).padStart(3, '0'); }
+    }
+    if (buildBed) {
+      const [x, y, w, f, a] = buildBed;
+      bed.style.width = `${w.toFixed(1)}px`;
+      bed.style.height = `${(w * f).toFixed(1)}px`;
+      bed.style.transform = `translate3d(${(x - w / 2).toFixed(1)}px, ${(y - w * f / 2).toFixed(1)}px, 0)`;
+      bed.style.opacity = a.toFixed(3);
     }
   }
 
@@ -677,7 +707,7 @@ function initMotion() {
     .from('.colour__pick', { opacity: 0, y: 20, duration: 0.9, ease: 'power3.out' }, 0.35)
     .from('.sw', { opacity: 0, y: 14, duration: 0.7, stagger: 0.04, ease: 'power3.out' }, 0.4);
   gsap.from('.about__copy > .label, .about__copy .lede, .proofs li, .about .link, .about__aside', { opacity: 0, y: 18, duration: 1, stagger: 0.08, ease: 'power3.out', scrollTrigger: { trigger: sections.about, start: 'top 45%' } });
-  gsap.from('.build__head .lede, .build__steps, .build__frame, .build__z', { opacity: 0, y: 16, duration: 1, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: sections.build, start: 'top 40%' } });
+  gsap.from('.build__head .lede, .build__steps, .build__z', { opacity: 0, y: 16, duration: 1, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: sections.build, start: 'top 40%' } });
   gsap.from('.mats__head > .label, .mats__head .lede', { opacity: 0, y: 16, duration: 1, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: sections.mats, start: 'top 50%' } });
   gsap.from('.mats__panel', { opacity: 0, x: 30, duration: 1.2, ease: 'power3.out', scrollTrigger: { trigger: sections.mats, start: 'top 45%' } });
   gsap.from('.tab', { opacity: 0, y: 24, duration: 1, stagger: 0.06, ease: 'power3.out', scrollTrigger: { trigger: sections.mats, start: 'top 40%' } });
@@ -742,8 +772,9 @@ function initMotion() {
 
   // ---------------------------------------------------------------- lifecycle
   ScrollTrigger.addEventListener('refreshInit', () => { lastH = -9999; });
-  ScrollTrigger.addEventListener('refresh', () => { measure(); layoutFinal(); applyFinal(); });
+  ScrollTrigger.addEventListener('refresh', () => { measure(); layoutFinal(); applyFinal(); measureTravel(); travelOn = null; });
   measure();
+  measureTravel();
   layoutFinal();
   gsap.ticker.add(frame);
 
@@ -760,7 +791,6 @@ function initMotion() {
     .fromTo(heroImg, { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 2, ease: 'power3.out', immediateRender: false }, at0(0.75))
     .to(intro, { glow: 1, duration: 2.2, ease: 'power2.out' }, at0(0.9))
     .to(intro, { v: 1, duration: top ? 2.2 : 0.01, ease: 'power2.inOut' }, at0(1.0))
-    .to(intro, { ring: 1, duration: top ? 2.2 : 0.01, ease: 'power2.inOut' }, at0(1.3))
     .from(heroLede, { opacity: 0, y: 14, duration: 1, ease: 'power3.out' }, at0(1.5))
     .from(heroCtas, { opacity: 0, y: 16, duration: 1, ease: 'power3.out' }, at0(2.1))
     .from(heroCue, { opacity: 0, duration: 1 }, at0(2.6));

@@ -90,27 +90,25 @@ export function heroForm(L, spool, N) {
   const { ax, ay } = L;
   const sx = spool.x, sy = spool.y, r = spool.r;
   const portrait = ax < ay;
+  // One unbroken strand: it sweeps in under the spool, rises round its left
+  // side and slips behind the flange into the winding. No loops, no crossings.
   const ctrl = portrait
     ? [
-        at(ax + 0.4, sy + r * 0.85, -0.2),
-        at(sx + r * 0.2, sy + r * 1.0, -0.3),
-        at(sx - r * 0.7, sy + r * 0.95, -0.1),
-        at(sx - r * 1.15, sy + r * 0.5, 0.4),
-        at(sx - r * 1.0, sy + r * 0.05, 0.9),
-        at(sx - r * 0.72, sy + r * 0.42, 0.6),
-        at(sx - r * 0.5, sy + r * 0.15, 1.2),
-        at(sx, sy, 1.6),
+        at(ax + 0.4, sy + r * 0.95, -0.2),
+        at(sx + r * 0.1, sy + r * 1.2, -0.2),
+        at(sx - r * 0.85, sy + r * 0.95, 0),
+        at(sx - r * 1.2, sy + r * 0.2, 0.5),
+        at(sx - r * 0.85, sy - r * 0.45, 1.1),
+        at(sx - r * 0.25, sy - r * 0.3, 1.5),
+        at(sx, sy, 1.7),
       ]
     : [
-        at(ax + 0.45, ay * 0.78, -0.3),
-        at(ax * 0.62, ay * 0.82, -0.25),
-        at(sx - r * 0.2, ay * 0.78, -0.2),
-        at(sx - r * 1.05, ay * 0.62, 0.15),
-        at(sx - r * 1.35, ay * 0.3, 0.7),
-        at(sx - r * 1.05, ay * 0.12, 1.0),
-        at(sx - r * 0.85, ay * 0.42, 0.6),
-        at(sx - r * 0.95, sy + r * 0.2, 1.2),
-        at(sx - r * 0.45, sy + r * 0.05, 1.5),
+        at(ax + 0.45, ay * 0.82, -0.3),
+        at(sx + r * 0.2, sy + r * 1.3, -0.25),
+        at(sx - r * 0.9, sy + r * 1.05, -0.05),
+        at(sx - r * 1.35, sy + r * 0.25, 0.5),
+        at(sx - r * 1.05, sy - r * 0.55, 1.1),
+        at(sx - r * 0.35, sy - r * 0.4, 1.5),
         at(sx, sy, 1.7),
       ];
   return path([{ fn: catmull(ctrl), w: 1 }], N);
@@ -131,16 +129,19 @@ export function ringForm(o, half, N) {
   return path([{ fn, w: 1 }], N);
 }
 
-/* About block: the strand crosses behind the printed object, then leads down. */
-export function aboutForm(L, box, N) {
+/* About block: the strand runs in low from the left, under the copy, climbs the
+ * side of the printed object and finishes as its top layer (`end`, world xyz). */
+export function aboutForm(L, box, N, end) {
   const { ax, ay } = L;
+  const k = box.s;
+  const lead = ax < ay
+    ? [at(-ax - 0.4, box.y + k * 0.3, 0.2), at(box.x - k * 0.62, box.y + k * 0.12, 0.3)]
+    : [at(-ax - 0.4, ay * 0.86, 0.2), at(lerp(-ax, box.x, 0.5), ay * 0.74, 0.3), at(box.x - k * 0.62, box.y + k * 0.42, 0.4)];
   const ctrl = [
-    at(-ax - 0.4, box.y - box.s * 0.25, 0.3),
-    at(lerp(-ax, box.x, 0.45), box.y - box.s * 0.55, 0.6),
-    at(box.x - box.s * 0.35, box.y - box.s * 0.18, 1.6),
-    at(box.x + box.s * 0.3, box.y + box.s * 0.05, 1.9),
-    at(box.x + box.s * 0.62, box.y + box.s * 0.38, 0.9),
-    at(box.x + box.s * 0.2, ay + 0.4, 0.2),
+    ...lead,
+    at(box.x - k * 0.58, box.y - k * 0.2, 0.3),
+    at(lerp(box.x - k * 0.5, end[0], 0.5), end[1] - k * 0.16, end[2] * 0.6),
+    end,
   ];
   return path([{ fn: catmull(ctrl), w: 1 }], N);
 }
@@ -295,5 +296,63 @@ export function mix(a, b, t, out) {
   const n = a.length;
   out = out || new Float32Array(n);
   for (let i = 0; i < n; i++) out[i] = a[i] + (b[i] - a[i]) * t;
+  return out;
+}
+
+/* ---------------------------------------------------------------- application icons
+ * Each icon is ONE continuous line (the filament never breaks), drawn in a
+ * [-1, 1] box. Straight runs stay straight; curves are sampled densely. */
+const arc = (cx, cy, r, a0, a1, n = 24) => Array.from({ length: n + 1 }, (_, i) => {
+  const a = (a0 + (a1 - a0) * (i / n)) * Math.PI / 180;
+  return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+});
+export const ICONS = {
+  // an isometric cube: form and fit
+  cube: () => [[-0.87, -0.5], [0, -1], [0.87, -0.5], [0, 0], [-0.87, -0.5], [-0.87, 0.5], [0, 1], [0.87, 0.5], [0.87, -0.5], [0, 0], [0, 1]],
+  // a light bulb: an idea taking shape
+  bulb: () => [[-0.24, 0.5], [-0.3, 0.18], ...arc(0, -0.28, 0.56, 125, 415, 48), [0.3, 0.18], [0.24, 0.5], [-0.24, 0.5], [-0.22, 0.66], [0.22, 0.66], [0.16, 0.82], [-0.16, 0.82]],
+  // a mortarboard: learning by making
+  cap: () => [[-1, -0.25], [0, -0.68], [1, -0.25], [0, 0.18], [-1, -0.25], [-0.58, -0.07], [-0.58, 0.38], ...Array.from({ length: 21 }, (_, i) => { const x = -0.58 + 1.16 * (i / 20); return [x, 0.38 + 0.18 * (1 - (x / 0.58) ** 2)]; }), [0.58, -0.07], [0.86, -0.2], [0.86, 0.48]],
+  // a wrench: weekend builds
+  wrench: () => [...arc(0, -0.45, 0.46, -60, 62, 18), [0.14, 0.02], [0.14, 0.82], ...arc(0, 0.82, 0.14, 0, 180, 10), [-0.14, 0.02], ...arc(0, -0.45, 0.46, 118, 240, 18), [-0.12, -0.6], [0.12, -0.6], [0.23, -0.85]],
+  // a gear: parts meant to be used
+  gear: () => {
+    const out = [];
+    for (let i = 0; i <= 240; i++) {
+      const a = (i / 240) * TAU - Math.PI / 2;
+      const r = 0.74 + 0.16 * Math.tanh(6 * Math.sin(a * 10));
+      out.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    out.push([0, -0.3], ...arc(0, 0, 0.3, -90, 270, 30));
+    return out;
+  },
+  // a five-petal flower: sculptural and decorative forms
+  flower: () => Array.from({ length: 301 }, (_, i) => {
+    const a = (i / 300) * Math.PI;
+    const r = 0.9 * Math.cos(5 * a);
+    return [Math.cos(a - Math.PI / 2) * r, Math.sin(a - Math.PI / 2) * r];
+  }),
+};
+
+/* Resample a 2D polyline to N points evenly by length and place it in 3D:
+ * box = {x, y, s} (s = half size), rot = {ry, rx}, z offset. */
+export function iconForm(name, box, rot, N, z = 0) {
+  const pts = ICONS[name]();
+  const acc = [0];
+  for (let i = 1; i < pts.length; i++) acc.push(acc[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = acc[acc.length - 1] || 1;
+  const out = new Float32Array(N * 3);
+  let k = 0;
+  for (let j = 0; j < N; j++) {
+    const s = (j / (N - 1)) * total;
+    while (k < pts.length - 2 && acc[k + 1] < s) k++;
+    const f = clamp01((s - acc[k]) / (acc[k + 1] - acc[k] || 1));
+    const x = lerp(pts[k][0], pts[k + 1][0], f) * box.s, y = lerp(pts[k][1], pts[k + 1][1], f) * box.s;
+    const [px, py, pz] = rotYX(x, y, 0, rot.ry, rot.rx);
+    const o = j * 3;
+    out[o] = box.x + px * (FOCAL + z + pz) / FOCAL;
+    out[o + 1] = box.y + py * (FOCAL + z + pz) / FOCAL;
+    out[o + 2] = pz + z;
+  }
   return out;
 }

@@ -41,9 +41,10 @@ function layoutHero() {
   renderHero();
 }
 function renderHero() {
-  R.render(strands.map((s) => ({ ...s, alpha: 1, r0: 0, r1: clamp01(0.02 + 0.98 * ease(range(draw.v, s.d, 0.7 + s.d))), fogScale: 0.8 })), [8, 8, 8]);
+  R.render(strands.map((s) => ({ ...s, alpha: 1, r0: 0, r1: clamp01(0.02 + 0.98 * ease(range(draw.v, s.d, 0.7 + s.d))), fogScale: 0.8 })), document.documentElement.dataset.mode === 'light' ? [245, 244, 239] : [8, 8, 8]);
 }
 layoutHero();
+addEventListener('modechange', renderHero);
 let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(layoutHero, 150); });
 
 /* ---------------------------------------------------------------- closing strand */

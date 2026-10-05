@@ -87,12 +87,12 @@ export const MATERIALS = [
 ];
 
 export const APPLICATIONS = [
-  { name: 'Prototyping',       note: 'Test form and fit before committing to production.', shape: 'hexbox',  colour: 'grey' },
-  { name: 'Product Design',    note: 'Presentation models with a considered finish.',     shape: 'lamp',    colour: 'white' },
-  { name: 'Education',         note: 'Tangible objects for learning by making.',          shape: 'gear',    colour: 'blue' },
-  { name: 'Maker Projects',    note: 'From weekend builds to ongoing projects.',          shape: 'star',    colour: 'orange' },
-  { name: 'Functional Parts',  note: 'Parts that are meant to be used, not just seen.',   shape: 'bushing', colour: 'carbon' },
-  { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', colour: 'red' },
+  { name: 'Prototyping',       note: 'Test form and fit before committing to production.', shape: 'hexbox',  icon: 'cube',   colour: 'grey' },
+  { name: 'Product Design',    note: 'Presentation models with a considered finish.',     shape: 'lamp',    icon: 'bulb',   colour: 'white' },
+  { name: 'Education',         note: 'Tangible objects for learning by making.',          shape: 'gear',    icon: 'cap',    colour: 'blue' },
+  { name: 'Maker Projects',    note: 'From weekend builds to ongoing projects.',          shape: 'star',    icon: 'wrench', colour: 'orange' },
+  { name: 'Functional Parts',  note: 'Parts that are meant to be used, not just seen.',   shape: 'bushing', icon: 'gear',   colour: 'carbon' },
+  { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', icon: 'flower', colour: 'red' },
 ];
 
 export const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp`;
