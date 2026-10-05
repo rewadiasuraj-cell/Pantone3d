@@ -94,27 +94,25 @@ function heroForm(L, spool, N) {
   const { ax, ay } = L;
   const sx = spool.x, sy = spool.y, r = spool.r;
   const portrait = ax < ay;
+  // One unbroken strand: it sweeps in under the spool, rises round its left
+  // side and slips behind the flange into the winding. No loops, no crossings.
   const ctrl = portrait
     ? [
-        at(ax + 0.4, sy + r * 0.85, -0.2),
-        at(sx + r * 0.2, sy + r * 1.0, -0.3),
-        at(sx - r * 0.7, sy + r * 0.95, -0.1),
-        at(sx - r * 1.15, sy + r * 0.5, 0.4),
-        at(sx - r * 1.0, sy + r * 0.05, 0.9),
-        at(sx - r * 0.72, sy + r * 0.42, 0.6),
-        at(sx - r * 0.5, sy + r * 0.15, 1.2),
-        at(sx, sy, 1.6),
+        at(ax + 0.4, sy + r * 0.95, -0.2),
+        at(sx + r * 0.1, sy + r * 1.2, -0.2),
+        at(sx - r * 0.85, sy + r * 0.95, 0),
+        at(sx - r * 1.2, sy + r * 0.2, 0.5),
+        at(sx - r * 0.85, sy - r * 0.45, 1.1),
+        at(sx - r * 0.25, sy - r * 0.3, 1.5),
+        at(sx, sy, 1.7),
       ]
     : [
-        at(ax + 0.45, ay * 0.78, -0.3),
-        at(ax * 0.62, ay * 0.82, -0.25),
-        at(sx - r * 0.2, ay * 0.78, -0.2),
-        at(sx - r * 1.05, ay * 0.62, 0.15),
-        at(sx - r * 1.35, ay * 0.3, 0.7),
-        at(sx - r * 1.05, ay * 0.12, 1.0),
-        at(sx - r * 0.85, ay * 0.42, 0.6),
-        at(sx - r * 0.95, sy + r * 0.2, 1.2),
-        at(sx - r * 0.45, sy + r * 0.05, 1.5),
+        at(ax + 0.45, ay * 0.82, -0.3),
+        at(sx + r * 0.2, sy + r * 1.3, -0.25),
+        at(sx - r * 0.9, sy + r * 1.05, -0.05),
+        at(sx - r * 1.35, sy + r * 0.25, 0.5),
+        at(sx - r * 1.05, sy - r * 0.55, 1.1),
+        at(sx - r * 0.35, sy - r * 0.4, 1.5),
         at(sx, sy, 1.7),
       ];
   return path([{ fn: catmull(ctrl), w: 1 }], N);
@@ -135,16 +133,19 @@ function ringForm(o, half, N) {
   return path([{ fn, w: 1 }], N);
 }
 
-/* About block: the strand crosses behind the printed object, then leads down. */
-function aboutForm(L, box, N) {
+/* About block: the strand runs in low from the left, under the copy, climbs the
+ * side of the printed object and finishes as its top layer (`end`, world xyz). */
+function aboutForm(L, box, N, end) {
   const { ax, ay } = L;
+  const k = box.s;
+  const lead = ax < ay
+    ? [at(-ax - 0.4, box.y + k * 0.3, 0.2), at(box.x - k * 0.62, box.y + k * 0.12, 0.3)]
+    : [at(-ax - 0.4, ay * 0.86, 0.2), at(lerp(-ax, box.x, 0.5), ay * 0.74, 0.3), at(box.x - k * 0.62, box.y + k * 0.42, 0.4)];
   const ctrl = [
-    at(-ax - 0.4, box.y - box.s * 0.25, 0.3),
-    at(lerp(-ax, box.x, 0.45), box.y - box.s * 0.55, 0.6),
-    at(box.x - box.s * 0.35, box.y - box.s * 0.18, 1.6),
-    at(box.x + box.s * 0.3, box.y + box.s * 0.05, 1.9),
-    at(box.x + box.s * 0.62, box.y + box.s * 0.38, 0.9),
-    at(box.x + box.s * 0.2, ay + 0.4, 0.2),
+    ...lead,
+    at(box.x - k * 0.58, box.y - k * 0.2, 0.3),
+    at(lerp(box.x - k * 0.5, end[0], 0.5), end[1] - k * 0.16, end[2] * 0.6),
+    end,
   ];
   return path([{ fn: catmull(ctrl), w: 1 }], N);
 }
@@ -299,6 +300,64 @@ function mix(a, b, t, out) {
   const n = a.length;
   out = out || new Float32Array(n);
   for (let i = 0; i < n; i++) out[i] = a[i] + (b[i] - a[i]) * t;
+  return out;
+}
+
+/* ---------------------------------------------------------------- application icons
+ * Each icon is ONE continuous line (the filament never breaks), drawn in a
+ * [-1, 1] box. Straight runs stay straight; curves are sampled densely. */
+const arc = (cx, cy, r, a0, a1, n = 24) => Array.from({ length: n + 1 }, (_, i) => {
+  const a = (a0 + (a1 - a0) * (i / n)) * Math.PI / 180;
+  return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+});
+const ICONS = {
+  // an isometric cube: form and fit
+  cube: () => [[-0.87, -0.5], [0, -1], [0.87, -0.5], [0, 0], [-0.87, -0.5], [-0.87, 0.5], [0, 1], [0.87, 0.5], [0.87, -0.5], [0, 0], [0, 1]],
+  // a light bulb: an idea taking shape
+  bulb: () => [[-0.24, 0.5], [-0.3, 0.18], ...arc(0, -0.28, 0.56, 125, 415, 48), [0.3, 0.18], [0.24, 0.5], [-0.24, 0.5], [-0.22, 0.66], [0.22, 0.66], [0.16, 0.82], [-0.16, 0.82]],
+  // a mortarboard: learning by making
+  cap: () => [[-1, -0.25], [0, -0.68], [1, -0.25], [0, 0.18], [-1, -0.25], [-0.58, -0.07], [-0.58, 0.38], ...Array.from({ length: 21 }, (_, i) => { const x = -0.58 + 1.16 * (i / 20); return [x, 0.38 + 0.18 * (1 - (x / 0.58) ** 2)]; }), [0.58, -0.07], [0.86, -0.2], [0.86, 0.48]],
+  // a wrench: weekend builds
+  wrench: () => [...arc(0, -0.45, 0.46, -60, 62, 18), [0.14, 0.02], [0.14, 0.82], ...arc(0, 0.82, 0.14, 0, 180, 10), [-0.14, 0.02], ...arc(0, -0.45, 0.46, 118, 240, 18), [-0.12, -0.6], [0.12, -0.6], [0.23, -0.85]],
+  // a gear: parts meant to be used
+  gear: () => {
+    const out = [];
+    for (let i = 0; i <= 240; i++) {
+      const a = (i / 240) * TAU - Math.PI / 2;
+      const r = 0.74 + 0.16 * Math.tanh(6 * Math.sin(a * 10));
+      out.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    out.push([0, -0.3], ...arc(0, 0, 0.3, -90, 270, 30));
+    return out;
+  },
+  // a five-petal flower: sculptural and decorative forms
+  flower: () => Array.from({ length: 301 }, (_, i) => {
+    const a = (i / 300) * Math.PI;
+    const r = 0.9 * Math.cos(5 * a);
+    return [Math.cos(a - Math.PI / 2) * r, Math.sin(a - Math.PI / 2) * r];
+  }),
+};
+
+/* Resample a 2D polyline to N points evenly by length and place it in 3D:
+ * box = {x, y, s} (s = half size), rot = {ry, rx}, z offset. */
+function iconForm(name, box, rot, N, z = 0) {
+  const pts = ICONS[name]();
+  const acc = [0];
+  for (let i = 1; i < pts.length; i++) acc.push(acc[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = acc[acc.length - 1] || 1;
+  const out = new Float32Array(N * 3);
+  let k = 0;
+  for (let j = 0; j < N; j++) {
+    const s = (j / (N - 1)) * total;
+    while (k < pts.length - 2 && acc[k + 1] < s) k++;
+    const f = clamp01((s - acc[k]) / (acc[k + 1] - acc[k] || 1));
+    const x = lerp(pts[k][0], pts[k + 1][0], f) * box.s, y = lerp(pts[k][1], pts[k + 1][1], f) * box.s;
+    const [px, py, pz] = rotYX(x, y, 0, rot.ry, rot.rx);
+    const o = j * 3;
+    out[o] = box.x + px * (FOCAL + z + pz) / FOCAL;
+    out[o + 1] = box.y + py * (FOCAL + z + pz) / FOCAL;
+    out[o + 2] = pz + z;
+  }
   return out;
 }
 
@@ -642,12 +701,12 @@ const MATERIALS = [
 ];
 
 const APPLICATIONS = [
-  { name: 'Prototyping',       note: 'Test form and fit before committing to production.', shape: 'hexbox',  colour: 'grey' },
-  { name: 'Product Design',    note: 'Presentation models with a considered finish.',     shape: 'lamp',    colour: 'white' },
-  { name: 'Education',         note: 'Tangible objects for learning by making.',          shape: 'gear',    colour: 'blue' },
-  { name: 'Maker Projects',    note: 'From weekend builds to ongoing projects.',          shape: 'star',    colour: 'orange' },
-  { name: 'Functional Parts',  note: 'Parts that are meant to be used, not just seen.',   shape: 'bushing', colour: 'carbon' },
-  { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', colour: 'red' },
+  { name: 'Prototyping',       note: 'Test form and fit before committing to production.', shape: 'hexbox',  icon: 'cube',   colour: 'grey' },
+  { name: 'Product Design',    note: 'Presentation models with a considered finish.',     shape: 'lamp',    icon: 'bulb',   colour: 'white' },
+  { name: 'Education',         note: 'Tangible objects for learning by making.',          shape: 'gear',    icon: 'cap',    colour: 'blue' },
+  { name: 'Maker Projects',    note: 'From weekend builds to ongoing projects.',          shape: 'star',    icon: 'wrench', colour: 'orange' },
+  { name: 'Functional Parts',  note: 'Parts that are meant to be used, not just seen.',   shape: 'bushing', icon: 'gear',   colour: 'carbon' },
+  { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', icon: 'flower', colour: 'red' },
 ];
 
 const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp`;
@@ -708,6 +767,19 @@ function initSite({ getLenis = () => null } = {}) {
   addEventListener('scroll', solid, { passive: true });
   solid();
 
+  // Light / dark mode switch. The choice is remembered in this browser only.
+  const root = document.documentElement;
+  const modeBtn = $('.mode');
+  const syncMode = () => modeBtn?.setAttribute('aria-checked', root.dataset.mode === 'light');
+  modeBtn?.addEventListener('click', () => {
+    const light = root.dataset.mode !== 'light';
+    if (light) root.dataset.mode = 'light'; else delete root.dataset.mode;
+    try { localStorage.setItem('p3d-mode', light ? 'light' : 'dark'); } catch (e) {}
+    syncMode();
+    dispatchEvent(new CustomEvent('modechange'));
+  });
+  syncMode();
+
   // Current page
   const page = document.body.dataset.page;
   $$(`[data-nav="${page}"]`).forEach((a) => a.setAttribute('aria-current', 'page'));
@@ -724,7 +796,7 @@ function initSite({ getLenis = () => null } = {}) {
  * progress; between sections the director blends the end state of one section
  * into the start state of the next, so the page reads as one continuous shot.
  * A second canvas above the page carries only the parts of the strand that
- * pass in front of a product (the orbit ring around the hero spool).
+ * pass in front of a product.
  */
 
 
@@ -743,8 +815,9 @@ const isMobile = () => mqMobile.matches;
 const YELLOW = hexToRgb(BRAND_YELLOW);
 const DARK = [8, 8, 8];
 const SOFT = [245, 244, 239];
+// The page colour the strand fades into with depth: follows the light / dark switch.
+const baseFog = () => (root.dataset.mode === 'light' ? SOFT : DARK);
 const SPECTRUM = ['#FFD400', '#FF8A00', '#FF2E63', '#D82CFF', '#6A5CFF', '#138CFF', '#00D5C8'].map(hexToRgb);
-const SCULPT = ['#1A1A1C', '#3A2A1A', '#E07A10', '#F7B102', '#FFD400'].map(hexToRgb); // bottom → top
 const rgbOf = (key) => hexToRgb(COLOURS[key].hex);
 const mixRgb = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
 const lum = (c) => (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
@@ -790,7 +863,7 @@ MATERIALS.forEach((m, i) => {
   const a = accentOf(m.colour);
   b.style.setProperty('--c', `rgb(${a.join(',')})`);
   b.style.setProperty('--c-rgb', a.join(','));
-  b.innerHTML = `<img src="${spoolSrc(m.colour, true)}" width="560" height="679" alt="" loading="lazy"><span><b>${m.name}</b><small>${m.line}</small></span>`;
+  b.innerHTML = `<img src="${spoolSrc(m.colour, true)}" width="560" height="675" alt="" loading="lazy"><span><b>${m.name}</b><small>${m.line}</small></span>`;
   tabWrap.appendChild(b);
 });
 
@@ -801,7 +874,7 @@ MATERIALS.forEach((m, i) => {
   el.className = 'card';
   el.innerHTML = `
     <div class="card__tex"><img src="${texSrc(m.colour)}" width="960" height="260" loading="lazy" alt="Close-up of ${m.name} filament in ${COLOURS[m.colour].name}"></div>
-    <img class="card__obj" src="${spoolSrc(m.colour, true)}" width="560" height="679" loading="lazy" alt="" aria-hidden="true">
+    <img class="card__obj" src="${spoolSrc(m.colour, true)}" width="560" height="675" loading="lazy" alt="" aria-hidden="true">
     <div class="card__body">
       <p class="card__top label"><span>Material ${String(i + 1).padStart(2, '0')}</span></p>
       <h3>${m.name}</h3>
@@ -947,8 +1020,8 @@ function renderStaticForms() {
     const s = 1.45;
     const pts = objectForm(shape, { x: 0, y: 0, s }, { rx: 0.42, ry: 0.4 }, 760);
     const it = { id: 's', pts, color: YELLOW, alpha: 1, width: layerPitch(shape, s) * 0.95 };
-    if (shape === 'sculpt') Object.assign(it, { grad: SCULPT, gradAmt: 1 });
-    r.render([it], DARK);
+    if (shape === 'sculpt') Object.assign(it, { grad: SPECTRUM, gradAmt: 1 });
+    r.render([it], baseFog());
   });
 }
 
@@ -956,7 +1029,8 @@ if (reduced) {
   root.classList.add('ready');
   renderStaticForms();
   let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(renderStaticForms, 200); });
-  ScrollTrigger.create({ trigger: '.colour', start: 'top 40px', end: 'bottom 40px', onToggle: (s) => { nav.dataset.theme = s.isActive ? 'light' : 'dark'; } });
+  addEventListener('modechange', renderStaticForms);
+  ScrollTrigger.create({ trigger: '.colour', start: 'top 40px', end: 'bottom 40px', onToggle: (s) => { nav.dataset.theme = s.isActive || root.dataset.mode === 'light' ? 'light' : 'dark'; } });
 } else {
   initMotion();
 }
@@ -1009,10 +1083,7 @@ function initMotion() {
     });
     const hs = A['hero-spool'];
     F.hero = heroForm(L, { x: hs.x, y: hs.y, r: hs.w / 2 }, N);
-    const hr = { x: hs.x - hs.w * 0.02, y: hs.y + hs.h * 0.05, rx: hs.w * (isMobile() ? 0.66 : 0.62), ry: hs.w * 0.17, roll: -0.12 };
-    F.heroRingB = ringForm(hr, 'back', N);
-    F.heroRingF = ringForm(hr, 'front', N);
-    F.about = aboutForm(L, aboutBox(), N);
+    { const b = aboutBox(); F.about = aboutForm(L, b, N, at(b.x, b.y, 1.7)); }
     const sb = A['story-stage'];
     F.straight = straightForm(L, sb.y, N);
     F.coil = coilForm(L, sb, N);
@@ -1031,38 +1102,26 @@ function initMotion() {
   }
 
   const item = (id, pts, color, o = {}) => ({ id, pts, color, alpha: 1, width: W0, r0: 0, r1: 1, gradAmt: 0, ...o });
-  const env = (o = {}) => ({ glow: 0, glowRGB: YELLOW, space: 0, light: 0, fog: DARK, ...o });
+  const env = (o = {}) => ({ glow: 0, glowRGB: YELLOW, space: 0, light: 0, fog: baseFog(), ...o });
   let clock = 0;
-  const ringStyle = (o = {}) => ({ grad: SPECTRUM, gradAmt: 1, gradCycle: true, gradShift: clock * 0.025, glow: 1, width: W0 * 0.42, ...o });
 
   // ---------------------------------------------------------------- section states
-  const intro = { v: 0, ring: 0, glow: 0 };
+  const intro = { v: 0, glow: 0 };
 
   function heroState(p) {
     const t = ease(range(p, 0.12, 0.95));
-    const ringA = 1 - smooth(range(p, 0.04, 0.5));
     return {
       items: [
         item('main', mix(F.hero, F.about, t), YELLOW, { r1: intro.v, grad: SPECTRUM, gradAmt: 1 }),
-        item('ringB', F.heroRingB, YELLOW, ringStyle({ r1: clamp01(intro.ring * 2), alpha: ringA })),
-        item('ringF', F.heroRingF, YELLOW, ringStyle({ r1: clamp01(intro.ring * 2 - 1), alpha: ringA, front: true })),
       ],
       env: env({ glow: intro.glow * (1 - range(p, 0.3, 0.9)) }),
     };
   }
 
+  // About: the strand follows the travelling spool down and slips in behind it.
   function aboutBox() { const a = A['about-obj']; return { x: a.x, y: a.y, s: Math.min(a.w * 1.2, a.h * 0.78) }; }
-  function aboutState(p) {
-    const box = aboutBox();
-    const rise = smooth(range(p, 0, 0.35));
-    return {
-      items: [
-        item('main', F.about, YELLOW, { grad: SPECTRUM, gradAmt: 1 }),
-        item('obj', objectForm('sculpt', { ...box, y: box.y + (1 - rise) * 0.08 }, { rx: 0.3, ry: 0.4 + p * 1.3 }, N), YELLOW,
-          { grad: SCULPT, gradAmt: 1, width: layerPitch('sculpt', box.s) * 0.95, alpha: 0.35 + 0.65 * rise }),
-      ],
-      env: env({ glow: 0.55, glowRGB: [224, 122, 16] }),
-    };
+  function aboutState() {
+    return { items: [item('main', F.about, YELLOW, { grad: SPECTRUM, gradAmt: 1 })], env: env({ glow: 0.35, glowRGB: [150, 70, 200] }) };
   }
 
   const STORY_FORMS = ['straight', 'wave', 'coil', 'layer', 'obj'];
@@ -1101,11 +1160,11 @@ function initMotion() {
         r1: 0.02 + 0.98 * ease(range(p, 0.03 + d, 0.3 + d)),
       }));
     });
-    return { items, env: env({ light: open, fog: mixRgb(DARK, SOFT, open) }) };
+    return { items, env: env({ light: open, fog: mixRgb(baseFog(), SOFT, open) }) };
   }
 
   const buildBox = () => ({ x: A['build-stage'].x, y: A['build-stage'].y + A['build-stage'].h * 0.08, s: A['build-stage'].w * 1.25 });
-  let buildHead = null;
+  let buildHead = null, buildBed = null;
   function buildState(p) {
     const box = buildBox();
     const grow = smooth(range(p, 0.85, 1));
@@ -1114,16 +1173,22 @@ function initMotion() {
     const hi = Math.min(N - 1, Math.max(0, Math.round(reveal * (N - 1))));
     const hx = obj[hi * 3], hy = obj[hi * 3 + 1], hz = obj[hi * 3 + 2];
     const top = A['build-stage'].y - A['build-stage'].h * 0.62;
+    // The feed drops in from above, right of the copy, so it never crosses the text.
+    const fx = isMobile() ? 0.62 : 0.32;
     const feed = path([{
       fn: catmull([
-        at(-L.ax - 0.4, top, 0), at(lerp(-L.ax, hx, 0.55), top, 0),
-        [hx - 0.12, top + 0.01, hz * 0.6], [hx, top + 0.14, hz], [hx, hy - 0.07, hz],
+        at(hx + fx, -L.ay - 0.3, 0), at(hx + fx * 0.75, top - 0.1, 0),
+        [hx + fx * 0.25, top + 0.04, hz * 0.5], [hx, top + 0.22, hz], [hx, hy - 0.08, hz],
       ]),
       w: 1,
     }], N);
     const toFeed = ease(range(p, 0.02, 0.18));
     const feedAlpha = 1 - smooth(range(p, 0.86, 0.96));
     buildHead = R.project(hx, hy, hz);
+    // The print bed: a disc just under the object's first layer.
+    const rx = 0.42, foot = SHAPES.vase.h * box.s * 0.5, rad = SHAPES.vase.prof(0) * box.s * 1.75;
+    const bc = R.project(box.x, box.y + foot * Math.cos(rx), foot * Math.sin(rx));
+    buildBed = [bc[0], bc[1], rad * L.u * bc[2] * 2, Math.sin(rx), smooth(range(p, 0.1, 0.24)) * (1 - smooth(range(p, 0.9, 1)))];
     buildHead.push(smooth(range(p, 0.16, 0.26)) * feedAlpha, Math.round(reveal * 22));
     return {
       items: [
@@ -1142,23 +1207,20 @@ function initMotion() {
     };
   }
 
-  // Applications show finished prints: many fine layers that close into a solid wall.
-  const appTurns = (shape) => Math.round(SHAPES[shape].turns * (isMobile() ? 2.4 : 3.2));
+  // Applications: no printed objects. One spectrum strand redraws itself as a
+  // simple line drawing for each use, holding, then reshaping into the next.
+  const appBox = () => ({ x: A['apps-stage'].x, y: A['apps-stage'].y, s: A['apps-stage'].s * 0.6 });
+  const appIcon = (i, p) => iconForm(APPLICATIONS[i].icon, appBox(), { ry: Math.sin(p * 9 + i) * 0.18, rx: 0.08 }, N);
   function appsState(p) {
     const n = APPLICATIONS.length;
-    const box = { ...A['apps-stage'], s: A['apps-stage'].s * 1.15 };
-    const items = [];
-    APPLICATIONS.forEach((ap, i) => {
-      const d = (p * n - (i + 0.5));
-      if (d < -1.25 || d > 0.75) return;
-      const hold = 0.22;
-      const z = d < -hold ? (-d - hold) * 9 : d > hold ? -(d - hold) * 5 : 0;
-      const alpha = smooth(range(-d, 1.25, 0.6)) * (1 - smooth(range(d, 0.4, 0.72)));
-      const turns = appTurns(ap.shape);
-      const pts = objectForm(ap.shape, box, { rx: 0.42 - d * 0.12, ry: d * 0.9 + i }, turns * (isMobile() ? 40 : 52), z, turns);
-      items.push(item('app' + i, pts, rgbOf(ap.colour), { width: layerPitch(ap.shape, box.s, turns) * 1.15, alpha, matte: ap.colour === 'carbon', fogScale: 0.25 }));
-    });
-    return { items, env: env() };
+    const u = Math.min(n - 1, Math.max(0, p * n - 0.5));
+    const i = Math.min(n - 2, Math.floor(u));
+    const t = ease(range(u - i, 0.3, 0.75));
+    const pts = t <= 0 ? appIcon(i, p) : t >= 1 ? appIcon(i + 1, p) : mix(appIcon(i, p), appIcon(i + 1, p), t);
+    return {
+      items: [item('app', pts, YELLOW, { grad: SPECTRUM, gradAmt: 1, width: W0 * 1.25, r1: ease(range(p * n, 0.02, 0.4)), shadow: 0.6 })],
+      env: env(),
+    };
   }
 
   const emptyState = () => ({ items: [], env: env() });
@@ -1249,7 +1311,7 @@ function initMotion() {
     const o = e.light;
     const clip = o <= 0.001 ? 'ellipse(0% 0% at 58% -12%)' : `ellipse(${(o * 104).toFixed(2)}% ${(o * 158).toFixed(2)}% at 58% -12%)`;
     if (envCache.clip !== clip) { envEls.light.style.clipPath = clip; envCache.clip = clip; }
-    const theme = e.light > 0.55 ? 'light' : 'dark';
+    const theme = e.light > 0.55 || root.dataset.mode === 'light' ? 'light' : 'dark';
     if (nav.dataset.theme !== theme) nav.dataset.theme = theme;
   }
 
@@ -1264,6 +1326,7 @@ function initMotion() {
       const p = clamp01((y - s.st.start) / Math.max(1, s.st.end - s.st.start));
       if (y >= s.st.start - vh() && y <= s.st.end + vh()) s.update(p, y);
     });
+    travelUpdate(y);
     const S = stateAt(y);
     applyEnv(S.env);
     const back = [], fr = [];
@@ -1285,8 +1348,6 @@ function initMotion() {
   const heroCtas = $('.hero__ctas');
 
   const heroScroll = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
-    .to(heroSpool, { scale: 1.18, rotate: -7, xPercent: 6, yPercent: -4, duration: 1 }, 0)
-    .to(heroSpool, { opacity: 0, duration: 0.35 }, 0.62)
     .to(heroTitleLines, { y: () => -innerHeight * 0.08, opacity: 0, duration: 0.6, stagger: 0.06 }, 0.1)
     .to([heroEyebrow, heroLede, heroCtas], { y: -30, opacity: 0, duration: 0.4, stagger: 0.04 }, 0)
     .to(heroCue, { opacity: 0, duration: 0.1 }, 0);
@@ -1301,6 +1362,38 @@ function initMotion() {
       const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;
       ry(nx * 3); rx(-ny * 2.4); tx(nx * 8); // ≤ 1.5° / 1.2°
     });
+  }
+
+  // The hero spool travels: it slides down into About, rolling as the page
+  // scrolls, rests there while About is pinned, then leaves with the section.
+  const travel = document.createElement('div');
+  travel.className = 'spool-travel';
+  travel.setAttribute('aria-hidden', 'true');
+  travel.innerHTML = `<img src="${heroImg.currentSrc || heroImg.src}" alt="">`;
+  document.body.appendChild(travel);
+  const heroWrap = $('.hero__spool');
+  let T = null;
+  function measureTravel() {
+    const rel = (el, sec) => { const r = el.getBoundingClientRect(), q = sec.getBoundingClientRect(); return { x: r.left - q.left, y: r.top - q.top, w: r.width, h: r.height }; };
+    const h = rel(heroWrap, sections.hero), a = rel($('.about__stage'), sections.about);
+    // same size as in the hero, centred on the About stage
+    T = { hero: h, about: { x: a.x + a.w / 2 - h.w / 2, y: a.y + a.h / 2 - h.h / 2, w: h.w, h: h.h } };
+    travel.style.width = `${h.w}px`; travel.style.height = `${h.h}px`;
+  }
+  let travelOn = null;
+  function travelUpdate(y) {
+    if (!T) return;
+    const on = y > 2;
+    if (on !== travelOn) { travelOn = on; travel.style.visibility = on ? 'visible' : 'hidden'; heroWrap.style.visibility = on ? 'hidden' : 'visible'; }
+    if (!on) return;
+    const a0 = aboutST.start, a1 = aboutST.end;
+    // glide across the screen while About rises underneath, then leave with it
+    const t = ease(range(y, 0, a0));
+    const x = lerp(T.hero.x, T.about.x, t);
+    const top = lerp(T.hero.y, T.about.y, t) + (y > a1 ? a1 - y : 0);
+    if (top < -T.hero.h * 1.2) { travel.style.opacity = '0'; return; }
+    travel.style.opacity = '1';
+    travel.style.transform = `translate3d(${x.toFixed(1)}px, ${top.toFixed(1)}px, 0) rotate(${(y * 0.12).toFixed(2)}deg)`;
   }
 
   // Story
@@ -1340,6 +1433,7 @@ function initMotion() {
 
   // Build
   const nozzle = $('.nozzle');
+  const bed = $('.build__bed');
   const steps = $$('.build__steps li');
   const zCount = $('.build__z b');
   let buildIdx = -1, lastZ = -1;
@@ -1348,9 +1442,17 @@ function initMotion() {
     if (idx !== buildIdx) { buildIdx = idx; steps.forEach((s, i) => s.classList.toggle('is-on', i === idx)); }
     if (buildHead) {
       const [x, y, , a, z] = buildHead;
-      nozzle.style.transform = `translate3d(${(x - 13).toFixed(1)}px, ${(y - 37).toFixed(1)}px, 0)`;
+      const nw = nozzle.offsetWidth;
+      nozzle.style.transform = `translate3d(${(x - nw / 2).toFixed(1)}px, ${(y - nw * 1.57).toFixed(1)}px, 0)`;
       nozzle.style.opacity = a.toFixed(3);
       if (z !== lastZ) { lastZ = z; zCount.textContent = String(z).padStart(3, '0'); }
+    }
+    if (buildBed) {
+      const [x, y, w, f, a] = buildBed;
+      bed.style.width = `${w.toFixed(1)}px`;
+      bed.style.height = `${(w * f).toFixed(1)}px`;
+      bed.style.transform = `translate3d(${(x - w / 2).toFixed(1)}px, ${(y - w * f / 2).toFixed(1)}px, 0)`;
+      bed.style.opacity = a.toFixed(3);
     }
   }
 
@@ -1392,7 +1494,7 @@ function initMotion() {
     .from('.colour__pick', { opacity: 0, y: 20, duration: 0.9, ease: 'power3.out' }, 0.35)
     .from('.sw', { opacity: 0, y: 14, duration: 0.7, stagger: 0.04, ease: 'power3.out' }, 0.4);
   gsap.from('.about__copy > .label, .about__copy .lede, .proofs li, .about .link, .about__aside', { opacity: 0, y: 18, duration: 1, stagger: 0.08, ease: 'power3.out', scrollTrigger: { trigger: sections.about, start: 'top 45%' } });
-  gsap.from('.build__head .lede, .build__steps, .build__frame, .build__z', { opacity: 0, y: 16, duration: 1, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: sections.build, start: 'top 40%' } });
+  gsap.from('.build__head .lede, .build__steps, .build__z', { opacity: 0, y: 16, duration: 1, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: sections.build, start: 'top 40%' } });
   gsap.from('.mats__head > .label, .mats__head .lede', { opacity: 0, y: 16, duration: 1, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: sections.mats, start: 'top 50%' } });
   gsap.from('.mats__panel', { opacity: 0, x: 30, duration: 1.2, ease: 'power3.out', scrollTrigger: { trigger: sections.mats, start: 'top 45%' } });
   gsap.from('.tab', { opacity: 0, y: 24, duration: 1, stagger: 0.06, ease: 'power3.out', scrollTrigger: { trigger: sections.mats, start: 'top 40%' } });
@@ -1457,8 +1559,9 @@ function initMotion() {
 
   // ---------------------------------------------------------------- lifecycle
   ScrollTrigger.addEventListener('refreshInit', () => { lastH = -9999; });
-  ScrollTrigger.addEventListener('refresh', () => { measure(); layoutFinal(); applyFinal(); });
+  ScrollTrigger.addEventListener('refresh', () => { measure(); layoutFinal(); applyFinal(); measureTravel(); travelOn = null; });
   measure();
+  measureTravel();
   layoutFinal();
   gsap.ticker.add(frame);
 
@@ -1475,7 +1578,6 @@ function initMotion() {
     .fromTo(heroImg, { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 2, ease: 'power3.out', immediateRender: false }, at0(0.75))
     .to(intro, { glow: 1, duration: 2.2, ease: 'power2.out' }, at0(0.9))
     .to(intro, { v: 1, duration: top ? 2.2 : 0.01, ease: 'power2.inOut' }, at0(1.0))
-    .to(intro, { ring: 1, duration: top ? 2.2 : 0.01, ease: 'power2.inOut' }, at0(1.3))
     .from(heroLede, { opacity: 0, y: 14, duration: 1, ease: 'power3.out' }, at0(1.5))
     .from(heroCtas, { opacity: 0, y: 16, duration: 1, ease: 'power3.out' }, at0(2.1))
     .from(heroCue, { opacity: 0, duration: 1 }, at0(2.6));

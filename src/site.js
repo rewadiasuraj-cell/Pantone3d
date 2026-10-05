@@ -50,6 +50,19 @@ export function initSite({ getLenis = () => null } = {}) {
   addEventListener('scroll', solid, { passive: true });
   solid();
 
+  // Light / dark mode switch. The choice is remembered in this browser only.
+  const root = document.documentElement;
+  const modeBtn = $('.mode');
+  const syncMode = () => modeBtn?.setAttribute('aria-checked', root.dataset.mode === 'light');
+  modeBtn?.addEventListener('click', () => {
+    const light = root.dataset.mode !== 'light';
+    if (light) root.dataset.mode = 'light'; else delete root.dataset.mode;
+    try { localStorage.setItem('p3d-mode', light ? 'light' : 'dark'); } catch (e) {}
+    syncMode();
+    dispatchEvent(new CustomEvent('modechange'));
+  });
+  syncMode();
+
   // Current page
   const page = document.body.dataset.page;
   $$(`[data-nav="${page}"]`).forEach((a) => a.setAttribute('aria-current', 'page'));
