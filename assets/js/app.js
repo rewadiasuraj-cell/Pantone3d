@@ -709,7 +709,7 @@ const APPLICATIONS = [
   { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', icon: 'flower', colour: 'red' },
 ];
 
-const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261005e`;
+const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261005f`;
 /* Close-up of the wound filament, cropped from the same product photography. */
 const texSrc = (colour) => `assets/img/tex-${colour}.webp`;
 
@@ -1369,7 +1369,8 @@ function initMotion() {
   const heroScroll = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
     .to(heroTitleLines, { y: () => -innerHeight * 0.08, opacity: 0, duration: 0.6, stagger: 0.06 }, 0.1)
     .to([heroEyebrow, heroLede, heroCtas], { y: -30, opacity: 0, duration: 0.4, stagger: 0.04 }, 0)
-    .to(heroCue, { opacity: 0, duration: 0.1 }, 0);
+    .to(heroCue, { opacity: 0, duration: 0.1 }, 0)
+    .to('.hero__floor', { opacity: 0, duration: 0.12 }, 0);
   function heroUpdate(p) { if (heroScroll.progress() !== p) heroScroll.progress(p); }
 
   if (finePointer) {
