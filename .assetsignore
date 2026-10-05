@@ -1,0 +1,13 @@
+# Files that wrangler must NOT publish from the site root
+.git
+.github
+.gitignore
+.assetsignore
+.preview
+node_modules
+wrangler.jsonc
+README.md
+src
+tools
+source
+.wrangler
