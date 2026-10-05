@@ -709,7 +709,7 @@ const APPLICATIONS = [
   { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', icon: 'flower', colour: 'red' },
 ];
 
-const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261005d`;
+const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261005e`;
 /* Close-up of the wound filament, cropped from the same product photography. */
 const texSrc = (colour) => `assets/img/tex-${colour}.webp`;
 
@@ -1187,10 +1187,10 @@ function initMotion() {
   }
 
   const STORY_FORMS = ['straight', 'wave', 'coil', 'layer', 'obj'];
-  const STORY_OBJ = 'tri';
+  const STORY_OBJ = 'vase', STORY_TURNS = 30;
   const storyBox = () => ({ ...A['story-stage'], s: A['story-stage'].s * 1.05 });
   function storyForm(k, p) {
-    if (k === 'obj') return objectForm(STORY_OBJ, storyBox(), { rx: 0.42, ry: p * 1.6 }, N);
+    if (k === 'obj') return objectForm(STORY_OBJ, storyBox(), { rx: 0.42, ry: p * 1.6 }, N, 0, STORY_TURNS);
     return F[k];
   }
   function storyState(p) {
@@ -1198,7 +1198,7 @@ function initMotion() {
     const i = Math.min(3, Math.floor(k));
     const t = ease(range(k - i, 0.2, 0.85));
     const a = storyForm(STORY_FORMS[i], p), b = storyForm(STORY_FORMS[i + 1], p);
-    const pitch = layerPitch(STORY_OBJ, storyBox().s) * 0.95;
+    const pitch = layerPitch(STORY_OBJ, storyBox().s, STORY_TURNS) * 0.95;
     const width = i < 3 ? W0 : lerp(W0, pitch, t);
     return { items: [item('main', mix(a, b, t), YELLOW, { width, grad: SPECTRUM, gradAmt: 1 })], env: env() };
   }
@@ -1383,24 +1383,14 @@ function initMotion() {
     });
   }
 
-  // The hero spool travels: it slides down into About and turns in real 3D as
-  // the page scrolls. The photo hands over to a built spool (two flanges and a
-  // wound drum as CSS 3D planes), so it can turn without ever being stretched.
+  // The hero spool travels: the original product photo slides down into About.
+  // It is never redrawn or stretched; it only leans a little as the page scrolls.
   const travel = document.createElement('div');
   travel.className = 'spool-travel';
   travel.setAttribute('aria-hidden', 'true');
-  const DRUM = 48;
-  const drumStrips = Array.from({ length: DRUM }, (_, i) => {
-    const t = i / DRUM;
-    const c = SPECTRUM[Math.floor(t * SPECTRUM.length) % SPECTRUM.length], d = SPECTRUM[Math.ceil(t * SPECTRUM.length) % SPECTRUM.length];
-    const f = t * SPECTRUM.length % 1, col = mixRgb(c, d, f).map(Math.round).join(',');
-    return `<i style="--a:${(t * 360).toFixed(2)}deg;--c:${col}"></i>`;
-  }).join('');
-  const flange = (cls) => `<div class="s3d__flange ${cls}"><b class="s3d__logo">pantone</b><span class="s3d__win s3d__win--l"></span><span class="s3d__win s3d__win--r"></span><span class="s3d__hub"></span></div>`;
-  travel.innerHTML = `<img class="spool-travel__photo" src="${heroImg.currentSrc || heroImg.src}" alt="">
-    <div class="s3d"><div class="s3d__body">${flange('s3d__flange--front')}${flange('s3d__flange--back')}<div class="s3d__drum">${drumStrips}</div><div class="s3d__core"></div></div></div>`;
+  travel.innerHTML = `<img class="spool-travel__photo" src="${heroImg.currentSrc || heroImg.src}" alt="">`;
   document.body.appendChild(travel);
-  const travelPhoto = $('.spool-travel__photo', travel), s3d = $('.s3d', travel), s3dBody = $('.s3d__body', travel);
+  const travelPhoto = $('.spool-travel__photo', travel);
   const heroWrap = $('.hero__spool');
   let T = null;
   function measureTravel() {
@@ -1408,11 +1398,8 @@ function initMotion() {
     const h = rel(heroWrap, sections.hero), a = rel($('.about__stage'), sections.about);
     T = { hero: h, about: { x: a.x + a.w / 2 - h.w / 2, y: a.y + a.h / 2 - h.h / 2, w: h.w, h: h.h } };
     travel.style.width = `${h.w}px`; travel.style.height = `${h.h}px`;
-    travel.style.setProperty('--D', `${(h.w * 0.9).toFixed(1)}px`);
   }
   let travelOn = null;
-  // Pose of the photo: flange face turned towards the viewer's left, drum on the right.
-  const POSE_Y = -38, POSE_X = -6;
   function travelUpdate(y) {
     if (!T) return;
     const on = y > 2;
@@ -1425,12 +1412,8 @@ function initMotion() {
     if (top < -T.hero.h * 1.2) { travel.style.opacity = '0'; return; }
     travel.style.opacity = '1';
     travel.style.transform = `translate3d(${x.toFixed(1)}px, ${top.toFixed(1)}px, 0)`;
-    const swap = smooth(range(y, innerHeight * 0.04, innerHeight * 0.22));
-    travelPhoto.style.opacity = (1 - swap).toFixed(3);
-    s3d.style.opacity = swap.toFixed(3);
-    // a full turn about the upright axis across the journey, always upright
-    const spin = POSE_Y + (y / innerHeight - 0.13) * 140;
-    s3dBody.style.transform = `rotateX(${POSE_X}deg) rotateY(${spin.toFixed(2)}deg)`;
+    const lean = Math.sin((y / innerHeight) * 1.6) * 7;
+    travelPhoto.style.transform = `rotate(${lean.toFixed(2)}deg)`;
   }
 
   // Story
