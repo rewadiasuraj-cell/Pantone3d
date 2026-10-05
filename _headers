@@ -1,0 +1,30 @@
+# Cloudflare Pages response headers — https://developers.cloudflare.com/pages/configuration/headers/
+#
+# Asset file names are not content-hashed (app.js, not app.3f9a.js), so cache
+# lifetimes are moderate and use stale-while-revalidate: repeat visits load
+# from cache instantly while the browser fetches any update in the background.
+# HTML keeps Cloudflare's default (always revalidated), so new deploys show up.
+#
+# Note: each header is set by only one rule. When several rules set the same
+# header, Cloudflare joins their values, which would break Cache-Control.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+
+# Product photography and logos — 7 days, refreshed in the background for 30 more
+/assets/img/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+
+# Third-party libraries (GSAP, Lenis) — change only when deliberately upgraded
+/assets/vendor/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+
+# Site styles and script — 1 hour, refreshed in the background for a day
+/assets/css/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400
+
+/assets/js/*
+  Cache-Control: public, max-age=3600, stale-while-revalidate=86400

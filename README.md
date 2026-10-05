@@ -42,6 +42,16 @@ python3 tools/build_assets.py
 
 Spool colour variants are made by re-shading **only the filament pixels** of the supplied product photo. The spool geometry is never altered.
 
+## Hosting
+
+The site is static and has no build step, so any static host can serve the repository root.
+
+- **Cloudflare Workers (current setup):** the Worker runs `npx wrangler deploy`. `wrangler.jsonc` serves the repository root as static assets, `.assetsignore` keeps the source, tools and docs from being published, and `_headers` applies there too.
+- **Cloudflare Pages:** connect the repository with production branch `main`, no framework preset, an empty build command and `/` as the output directory. `_headers` sets cache lifetimes and basic security headers.
+- **GitHub Pages:** deploy from `main` with `/ (root)` selected. GitHub Pages ignores `_headers`.
+
+If you rename asset files on each release (for example `app.3f9a.js`), you can raise the cache lifetimes in `_headers` to a year with `immutable`.
+
 ## Motion system
 
 - **One canvas, one strand.** Each pinned section describes the strand as a function of its own scroll progress. Between sections the director blends one section's end state into the next section's start state, so there are no cuts.
