@@ -5,10 +5,10 @@
  * progress; between sections the director blends the end state of one section
  * into the start state of the next, so the page reads as one continuous shot.
  * A second canvas above the page carries only the parts of the strand that
- * pass in front of a product (the orbit rings around the spools).
+ * pass in front of a product (the orbit ring around the hero spool).
  */
 import {
-  heroForm, aboutForm, ringForm, waveRibbon, straightForm, coilForm, waveForm, layerForm, objectForm, layerPitch,
+  heroForm, aboutForm, ringForm, waveRibbon, straightForm, coilForm, waveForm, layerForm, objectForm, layerPitch, SHAPES,
   mix, ease, smooth, range, lerp, clamp01, catmull, path, at, TAU,
 } from './forms.js';
 import { StrandRenderer, hexToRgb } from './strand.js';
@@ -317,13 +317,16 @@ function initMotion() {
     F.coil = coilForm(L, sb, N);
     F.wave = waveForm(L, sb, N);
     F.layer = layerForm(L, sb, N);
-    const ms = A['mats-spool'];
-    const mr = { x: ms.x, y: ms.y + ms.h * 0.2, rx: ms.w * (isMobile() ? 0.78 : 0.84), ry: ms.w * 0.19, roll: -0.08 };
-    F.matRingB = ringForm(mr, 'back', N);
-    F.matRingF = ringForm(mr, 'front', N);
     const gap = W0 * 1.9 * 1.12;
-    F.ribbon0 = waveRibbon(L, 0, gap, N);
-    F.ribbon = RIBBON_K.map((k) => waveRibbon(L, k, gap, NR));
+    // One long, gentle arc across the top of the Colour section: no dip, no twist.
+    const rib = [
+      at(-L.ax - 0.5, -L.ay * 0.42, 0.2),
+      at(-L.ax * 0.35, -L.ay * 0.6, 0.1),
+      at(L.ax * 0.35, -L.ay * 0.58, 0),
+      at(L.ax + 0.5, -L.ay * 0.36, -0.05),
+    ];
+    F.ribbon0 = waveRibbon(L, 0, gap, N, rib, true);
+    F.ribbon = RIBBON_K.map((k) => waveRibbon(L, k, gap, NR, rib, true));
   }
 
   const item = (id, pts, color, o = {}) => ({ id, pts, color, alpha: 1, width: W0, r0: 0, r1: 1, gradAmt: 0, ...o });
@@ -375,21 +378,17 @@ function initMotion() {
     const a = storyForm(STORY_FORMS[i], p), b = storyForm(STORY_FORMS[i + 1], p);
     const pitch = layerPitch(STORY_OBJ, storyBox().s) * 0.95;
     const width = i < 3 ? W0 : lerp(W0, pitch, t);
-    return { items: [item('main', mix(a, b, t), YELLOW, { width })], env: env() };
+    return { items: [item('main', mix(a, b, t), YELLOW, { width, grad: SPECTRUM, gradAmt: 1 })], env: env() };
   }
 
   function matsState() {
     const m = MATERIALS[Math.max(0, matIndex)];
     return {
-      items: [
-        item('main', F.matRingB, YELLOW, ringStyle()),
-        item('ringF', F.matRingF, YELLOW, ringStyle({ front: true })),
-      ],
+      items: [],
       env: env({ glow: 1, glowRGB: rgbOf(m.colour) }),
     };
   }
 
-  const colourBox = () => ({ ...A['colour-sample'], s: A['colour-sample'].s * 1.1 });
   function colourState(p) {
     const open = smooth(range(p, 0, 0.12)) * (1 - smooth(range(p, 0.88, 1)));
     const WR = W0 * 1.9;
@@ -401,10 +400,6 @@ function initMotion() {
         r1: 0.02 + 0.98 * ease(range(p, 0.03 + d, 0.3 + d)),
       }));
     });
-    const sb = colourBox();
-    items.push(item('sample', objectForm('vase', sb, { rx: 0.42, ry: p * 4 }, N), colourRGB.cur, {
-      width: layerPitch('vase', sb.s) * 0.95, shadow: open * 0.8, alpha: smooth(range(p, 0.08, 0.18)) * (1 - smooth(range(p, 0.84, 0.92))),
-    }));
     return { items, env: env({ light: open, fog: mixRgb(DARK, SOFT, open) }) };
   }
 
@@ -446,6 +441,8 @@ function initMotion() {
     };
   }
 
+  // Applications show finished prints: many fine layers that close into a solid wall.
+  const appTurns = (shape) => Math.round(SHAPES[shape].turns * (isMobile() ? 2.4 : 3.2));
   function appsState(p) {
     const n = APPLICATIONS.length;
     const box = { ...A['apps-stage'], s: A['apps-stage'].s * 1.15 };
@@ -456,10 +453,11 @@ function initMotion() {
       const hold = 0.22;
       const z = d < -hold ? (-d - hold) * 9 : d > hold ? -(d - hold) * 5 : 0;
       const alpha = smooth(range(-d, 1.25, 0.6)) * (1 - smooth(range(d, 0.4, 0.72)));
-      const pts = objectForm(ap.shape, box, { rx: 0.42 - d * 0.12, ry: d * 0.9 + i }, N, z);
-      items.push(item('app' + i, pts, rgbOf(ap.colour), { width: layerPitch(ap.shape, box.s) * 0.95, alpha, matte: ap.colour === 'carbon' }));
+      const turns = appTurns(ap.shape);
+      const pts = objectForm(ap.shape, box, { rx: 0.42 - d * 0.12, ry: d * 0.9 + i }, turns * (isMobile() ? 40 : 52), z, turns);
+      items.push(item('app' + i, pts, rgbOf(ap.colour), { width: layerPitch(ap.shape, box.s, turns) * 1.15, alpha, matte: ap.colour === 'carbon', fogScale: 0.25 }));
     });
-    return { items, env: env({ space: 1 }) };
+    return { items, env: env() };
   }
 
   const emptyState = () => ({ items: [], env: env() });

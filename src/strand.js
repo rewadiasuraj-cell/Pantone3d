@@ -199,7 +199,7 @@ export class StrandRenderer {
     if (it.grad && it.gradAmt > 0) base = mixStops(base, it.grad, it.gradCycle ? f + (it.gradShift || 0) : f, it.gradCycle, it.gradAmt);
     const col = (m, add = 0) => [0, 1, 2].map((q) => (base[q] * m + add) * (1 - fogT) + fog[q] * fogT);
     const hl = it.matte ? 0.18 : 0.42;
-    return [col(lit * 0.5), col(lit * 0.92), col(lit * (1 - hl), 255 * hl * lit), col(1.1, 20)];
+    return [col(lit * 0.8), col(lit * 0.96), col(lit * (1 - hl), 255 * hl * lit), col(1.1, 20)];
   }
 
   /* A solid colour, or a gradient along the chunk when its two ends differ. */
