@@ -290,6 +290,10 @@ main, .foot { position: relative; z-index: 2; }
 .hero__cue i::after { content: ""; position: absolute; left: 50%; top: 7px; width: 2px; height: 5px; margin-left: -1px; border-radius: 2px; background: var(--fg); animation: cue 2.4s var(--ease) infinite; }
 @keyframes cue { 0%, 100% { transform: translateY(0); opacity: .3; } 50% { transform: translateY(6px); opacity: 1; } }
 
+.spool-travel { position: fixed; left: 0; top: 0; z-index: 2; pointer-events: none; visibility: hidden; will-change: transform; }
+.spool-travel img { width: 100%; height: 100%; object-fit: contain; }
+html.static .spool-travel { display: none; }
+
 /* ---------------------------------------------------------------- 01 about (home) */
 .about { display: flex; align-items: center; }
 .about__copy { position: relative; z-index: 1; }

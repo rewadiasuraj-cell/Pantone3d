@@ -1083,8 +1083,7 @@ function initMotion() {
     });
     const hs = A['hero-spool'];
     F.hero = heroForm(L, { x: hs.x, y: hs.y, r: hs.w / 2 }, N);
-    F.aboutObj = aboutObj(0);
-    F.about = aboutForm(L, aboutBox(), N, topOf(F.aboutObj));
+    { const b = aboutBox(); F.about = aboutForm(L, b, N, at(b.x, b.y, 1.7)); }
     const sb = A['story-stage'];
     F.straight = straightForm(L, sb.y, N);
     F.coil = coilForm(L, sb, N);
@@ -1119,22 +1118,10 @@ function initMotion() {
     };
   }
 
-  // About: one spectrum strand becomes a finished print. Its last point is the
-  // object's top layer, so the two read as the same piece of filament.
-  const ABOUT_TURNS = Math.round(SHAPES.sculpt.turns * 1.8);
+  // About: the strand follows the travelling spool down and slips in behind it.
   function aboutBox() { const a = A['about-obj']; return { x: a.x, y: a.y, s: Math.min(a.w * 1.2, a.h * 0.78) }; }
-  const aboutObj = (p) => objectForm('sculpt', aboutBox(), { rx: 0.32, ry: 0.4 + p * 1.1 }, ABOUT_TURNS * 52, 0, ABOUT_TURNS);
-  const topOf = (pts) => { const n = pts.length; return [pts[n - 3], pts[n - 2], pts[n - 1]]; };
-  function aboutState(p) {
-    const box = aboutBox();
-    const obj = p <= 0 ? F.aboutObj : aboutObj(p);
-    return {
-      items: [
-        item('main', p <= 0 ? F.about : aboutForm(L, box, N, topOf(obj)), YELLOW, { grad: SPECTRUM, gradAmt: 1 }),
-        item('obj', obj, YELLOW, { grad: SPECTRUM, gradAmt: 1, width: layerPitch('sculpt', box.s, ABOUT_TURNS) * 1.15, fogScale: 0.25 }),
-      ],
-      env: env({ glow: 0.4, glowRGB: [150, 70, 200] }),
-    };
+  function aboutState() {
+    return { items: [item('main', F.about, YELLOW, { grad: SPECTRUM, gradAmt: 1 })], env: env({ glow: 0.35, glowRGB: [150, 70, 200] }) };
   }
 
   const STORY_FORMS = ['straight', 'wave', 'coil', 'layer', 'obj'];
@@ -1339,6 +1326,7 @@ function initMotion() {
       const p = clamp01((y - s.st.start) / Math.max(1, s.st.end - s.st.start));
       if (y >= s.st.start - vh() && y <= s.st.end + vh()) s.update(p, y);
     });
+    travelUpdate(y);
     const S = stateAt(y);
     applyEnv(S.env);
     const back = [], fr = [];
@@ -1360,8 +1348,6 @@ function initMotion() {
   const heroCtas = $('.hero__ctas');
 
   const heroScroll = gsap.timeline({ paused: true, defaults: { ease: 'none' } })
-    .to(heroSpool, { scale: 1.18, rotate: -7, xPercent: 6, yPercent: -4, duration: 1 }, 0)
-    .to(heroSpool, { opacity: 0, duration: 0.35 }, 0.62)
     .to(heroTitleLines, { y: () => -innerHeight * 0.08, opacity: 0, duration: 0.6, stagger: 0.06 }, 0.1)
     .to([heroEyebrow, heroLede, heroCtas], { y: -30, opacity: 0, duration: 0.4, stagger: 0.04 }, 0)
     .to(heroCue, { opacity: 0, duration: 0.1 }, 0);
@@ -1376,6 +1362,38 @@ function initMotion() {
       const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;
       ry(nx * 3); rx(-ny * 2.4); tx(nx * 8); // ≤ 1.5° / 1.2°
     });
+  }
+
+  // The hero spool travels: it slides down into About, rolling as the page
+  // scrolls, rests there while About is pinned, then leaves with the section.
+  const travel = document.createElement('div');
+  travel.className = 'spool-travel';
+  travel.setAttribute('aria-hidden', 'true');
+  travel.innerHTML = `<img src="${heroImg.currentSrc || heroImg.src}" alt="">`;
+  document.body.appendChild(travel);
+  const heroWrap = $('.hero__spool');
+  let T = null;
+  function measureTravel() {
+    const rel = (el, sec) => { const r = el.getBoundingClientRect(), q = sec.getBoundingClientRect(); return { x: r.left - q.left, y: r.top - q.top, w: r.width, h: r.height }; };
+    const h = rel(heroWrap, sections.hero), a = rel($('.about__stage'), sections.about);
+    // same size as in the hero, centred on the About stage
+    T = { hero: h, about: { x: a.x + a.w / 2 - h.w / 2, y: a.y + a.h / 2 - h.h / 2, w: h.w, h: h.h } };
+    travel.style.width = `${h.w}px`; travel.style.height = `${h.h}px`;
+  }
+  let travelOn = null;
+  function travelUpdate(y) {
+    if (!T) return;
+    const on = y > 2;
+    if (on !== travelOn) { travelOn = on; travel.style.visibility = on ? 'visible' : 'hidden'; heroWrap.style.visibility = on ? 'hidden' : 'visible'; }
+    if (!on) return;
+    const a0 = aboutST.start, a1 = aboutST.end;
+    // glide across the screen while About rises underneath, then leave with it
+    const t = ease(range(y, 0, a0));
+    const x = lerp(T.hero.x, T.about.x, t);
+    const top = lerp(T.hero.y, T.about.y, t) + (y > a1 ? a1 - y : 0);
+    if (top < -T.hero.h * 1.2) { travel.style.opacity = '0'; return; }
+    travel.style.opacity = '1';
+    travel.style.transform = `translate3d(${x.toFixed(1)}px, ${top.toFixed(1)}px, 0) rotate(${(y * 0.12).toFixed(2)}deg)`;
   }
 
   // Story
@@ -1541,8 +1559,9 @@ function initMotion() {
 
   // ---------------------------------------------------------------- lifecycle
   ScrollTrigger.addEventListener('refreshInit', () => { lastH = -9999; });
-  ScrollTrigger.addEventListener('refresh', () => { measure(); layoutFinal(); applyFinal(); });
+  ScrollTrigger.addEventListener('refresh', () => { measure(); layoutFinal(); applyFinal(); measureTravel(); travelOn = null; });
   measure();
+  measureTravel();
   layoutFinal();
   gsap.ticker.add(frame);
 
