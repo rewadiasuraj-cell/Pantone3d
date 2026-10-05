@@ -223,6 +223,68 @@ matTabs.forEach((t, i) => {
 });
 
 /* ==========================================================================
+   Process cards: small strand scenes, one per step
+   ========================================================================== */
+const stepCvs = $$('.step__cv').map((cv) => ({ cv, kind: cv.dataset.step, nz: cv.parentElement.querySelector('.step__nozzle') }));
+let stepP = 1;
+const stepFog = () => (root.dataset.mode === 'light' ? [233, 232, 227] : [24, 24, 27]);
+const STEP_WHITE = [236, 233, 224];
+function placeNozzle(nz, p, a = 1) {
+  if (!nz) return;
+  const w = nz.getBoundingClientRect().width || 46, h = w * (100 / 60);
+  nz.style.transform = `translate3d(${(p[0] - w / 2).toFixed(1)}px, ${(p[1] - h * 0.94).toFixed(1)}px, 0)`;
+  nz.style.opacity = a;
+}
+function renderSteps(p = stepP) {
+  stepP = p;
+  const fog = stepFog();
+  stepCvs.forEach((o) => {
+    if (!o.cv.clientWidth) return;
+    if (!o.r || o.w !== o.cv.clientWidth || o.h !== o.cv.clientHeight) {
+      o.r = new StrandRenderer(o.cv, { chunk: 4 });
+      o.w = o.cv.clientWidth; o.h = o.cv.clientHeight;
+      o.L = o.r.resize(o.w, o.h);
+    }
+    const { r, L } = o;
+    if (o.kind === 'extrude') {
+      // Filament feeds down through the hotend and is laid as a bead on the bed.
+      const tip = [0, -0.18, 0], bed = 0.5;
+      const pts = path([
+        { fn: catmull([[0.05, -L.ay - 0.2, 0], [0, -0.6, 0], tip]), w: 1 },
+        { fn: catmull([tip, [0, 0.2, 0], [0.12, bed - 0.02, 0], [0.5, bed, 0], [L.ax + 0.2, bed, 0]]), w: 1.4 },
+      ], 420);
+      const lay = 0.62 + 0.38 * ease(range(p, 0, 0.5));
+      r.render([{ id: 'x', pts, color: YELLOW, alpha: 1, width: 0.075, r1: lay }], fog);
+      // The print bed, just under the bead.
+      const by = r.project(0, bed + 0.045, 0)[1], ctx = r.ctx;
+      ctx.fillStyle = root.dataset.mode === 'light' ? 'rgba(0,0,0,.16)' : 'rgba(255,255,255,.14)';
+      ctx.fillRect(r.W * 0.08, by, r.W * 0.92, 2);
+      placeNozzle(o.nz, r.project(...tip));
+    } else if (o.kind === 'layers') {
+      // A vase printing layer by layer, nozzle riding the newest layer.
+      const box = { x: 0, y: 0.16, s: 1.45 };
+      const pts = objectForm('vase', box, { rx: 0.42, ry: 0 }, 640);
+      const r1 = 0.28 + 0.5 * ease(range(p, 0.1, 0.75));
+      const i = Math.round(r1 * 639) * 3;
+      r.render([{ id: 'l', pts, color: YELLOW, alpha: 1, width: layerPitch('vase', box.s) * 0.95, r1 }], fog);
+      placeNozzle(o.nz, r.project(pts[i], pts[i + 1], pts[i + 2]));
+    } else {
+      // The finished part, many fine layers, turning as you scroll.
+      const box = { x: 0, y: 0.04, s: 1.35 };
+      const pts = objectForm('sculpt', box, { rx: 0.42, ry: -0.6 + p * 1.8 }, 900, 0, 46);
+      r.render([{ id: 'o', pts, color: YELLOW, alpha: 1, width: layerPitch('sculpt', box.s, 46) * 0.95, grad: SPECTRUM, gradAmt: 1 }], fog);
+    }
+  });
+}
+{
+  let t;
+  addEventListener('resize', () => { clearTimeout(t); t = setTimeout(() => renderSteps(), 150); });
+  addEventListener('modechange', () => renderSteps());
+  addEventListener('load', () => renderSteps());
+  renderSteps(reduced ? 1 : 0);
+}
+
+/* ==========================================================================
    Static mode (reduced motion): everything readable, no pinning
    ========================================================================== */
 function renderStaticForms() {
@@ -263,7 +325,7 @@ function initMotion() {
     hero: $('.hero'), about: $('.about'), story: $('.story'), mats: $('.mats'), colour: $('.colour'),
     build: $('.build'), proof: $('.proof'), apps: $('.apps'), range: $('.range'), final: $('.final'),
   };
-  ['hero', 'about', 'story', 'mats', 'colour', 'build', 'apps'].forEach((k) => sections[k].classList.add('pin'));
+  ['hero', 'about', 'story', 'mats', 'colour', 'apps'].forEach((k) => sections[k].classList.add('pin'));
 
   // ---------------------------------------------------------------- renderers + layout
   const canvas = $('.strand');
@@ -376,49 +438,6 @@ function initMotion() {
     return { items, env: env({ light: open, fog: mixRgb(baseFog(), SOFT, open) }) };
   }
 
-  const buildBox = () => ({ x: A['build-stage'].x, y: A['build-stage'].y + A['build-stage'].h * 0.08, s: A['build-stage'].w * 1.25 });
-  let buildHead = null, buildBed = null;
-  function buildState(p) {
-    const box = buildBox();
-    const grow = smooth(range(p, 0.85, 1));
-    const obj = objectForm('vase', { ...box, s: box.s * (1 + grow * 0.05) }, { rx: 0.42, ry: grow * 0.7 }, N);
-    const reveal = lerp(0.0, 0.03, range(p, 0.18, 0.3)) + (1 - 0.03) * ease(range(p, 0.3, 0.85));
-    const hi = Math.min(N - 1, Math.max(0, Math.round(reveal * (N - 1))));
-    const hx = obj[hi * 3], hy = obj[hi * 3 + 1], hz = obj[hi * 3 + 2];
-    const top = A['build-stage'].y - A['build-stage'].h * 0.62;
-    // The feed drops in from above, right of the copy, so it never crosses the text.
-    const fx = isMobile() ? 0.62 : 0.32;
-    const feed = path([{
-      fn: catmull([
-        at(hx + fx, -L.ay - 0.3, 0), at(hx + fx * 0.75, top - 0.1, 0),
-        [hx + fx * 0.25, top + 0.04, hz * 0.5], [hx, top + 0.22, hz], [hx, hy - 0.08, hz],
-      ]),
-      w: 1,
-    }], N);
-    const toFeed = ease(range(p, 0.02, 0.18));
-    const feedAlpha = 1 - smooth(range(p, 0.86, 0.96));
-    buildHead = R.project(hx, hy, hz);
-    // The print bed: a disc just under the object's first layer.
-    const rx = 0.42, foot = SHAPES.vase.h * box.s * 0.5, rad = SHAPES.vase.prof(0) * box.s * 1.75;
-    const bc = R.project(box.x, box.y + foot * Math.cos(rx), foot * Math.sin(rx));
-    buildBed = [bc[0], bc[1], rad * L.u * bc[2] * 2, Math.sin(rx), smooth(range(p, 0.1, 0.24)) * (1 - smooth(range(p, 0.9, 1)))];
-    buildHead.push(smooth(range(p, 0.16, 0.26)) * feedAlpha, Math.round(reveal * 22));
-    return {
-      items: [
-        item('main', mix(F.ribbon0, feed, toFeed), colourRGB.cur, { alpha: feedAlpha }),
-        item('obj', obj, colourRGB.cur, { width: layerPitch('vase', box.s) * 0.95, r1: reveal }),
-      ],
-      env: env(),
-    };
-  }
-
-  function proofState() {
-    const box = buildBox();
-    return {
-      items: [item('obj', objectForm('vase', { ...box, s: box.s * 1.05 }, { rx: 0.42, ry: 1.4 }, N, 9), colourRGB.cur, { width: layerPitch('vase', box.s), alpha: 0 })],
-      env: env(),
-    };
-  }
 
   // Applications: no printed objects. One spectrum strand redraws itself as a
   // simple line drawing for each use, holding, then reshaping into the next.
@@ -478,7 +497,7 @@ function initMotion() {
   const storyST = pinST(sections.story, 2.6, 1.8);
   matST = pinST(sections.mats, 3.4, 2.4);
   const colourST = pinST(sections.colour, 2.4, 1.7);
-  const buildST = pinST(sections.build, 2.4, 1.6);
+  const buildST = ScrollTrigger.create({ trigger: sections.build, start: 'top top', end: 'bottom bottom' });
   const proofST = ScrollTrigger.create({ trigger: sections.proof, start: 'top top', end: 'bottom bottom' });
   const appsST = pinST(sections.apps, 3.0, 2.0);
   const rangeST = ScrollTrigger.create({ trigger: sections.range, start: 'top top', end: 'bottom bottom' });
@@ -489,8 +508,8 @@ function initMotion() {
     { st: storyST, state: storyState, update: storyUpdate },
     { st: matST, state: matsState, update: matsUpdate },
     { st: colourST, state: colourState, update: colourUpdate },
-    { st: buildST, state: buildState, update: buildUpdate },
-    { st: proofST, state: proofState },
+    { st: buildST, state: emptyState },
+    { st: proofST, state: emptyState },
     { st: appsST, state: appsState, update: appsUpdate },
     { st: rangeST, state: emptyState },
   ];
@@ -662,31 +681,6 @@ function initMotion() {
     if (idx !== colourScrollIdx) { colourScrollIdx = idx; setColour(idx); }
   }
 
-  // Build
-  const nozzle = $('.nozzle');
-  const bed = $('.build__bed');
-  const steps = $$('.build__steps li');
-  const zCount = $('.build__z b');
-  let buildIdx = -1, lastZ = -1;
-  function buildUpdate(p) {
-    const idx = p < 0.18 ? 0 : p < 0.3 ? 1 : p < 0.85 ? 2 : 3;
-    if (idx !== buildIdx) { buildIdx = idx; steps.forEach((s, i) => s.classList.toggle('is-on', i === idx)); }
-    if (buildHead) {
-      const [x, y, , a, z] = buildHead;
-      const nw = nozzle.offsetWidth;
-      nozzle.style.transform = `translate3d(${(x - nw / 2).toFixed(1)}px, ${(y - nw * 1.57).toFixed(1)}px, 0)`;
-      nozzle.style.opacity = a.toFixed(3);
-      if (z !== lastZ) { lastZ = z; zCount.textContent = String(z).padStart(3, '0'); }
-    }
-    if (buildBed) {
-      const [x, y, w, f, a] = buildBed;
-      bed.style.width = `${w.toFixed(1)}px`;
-      bed.style.height = `${(w * f).toFixed(1)}px`;
-      bed.style.transform = `translate3d(${(x - w / 2).toFixed(1)}px, ${(y - w * f / 2).toFixed(1)}px, 0)`;
-      bed.style.opacity = a.toFixed(3);
-    }
-  }
-
   // Applications
   const appItems = $$('.apps__list li');
   const appBig = $('.apps__big');
@@ -725,7 +719,11 @@ function initMotion() {
     .from('.colour__pick', { opacity: 0, y: 20, duration: 0.9, ease: 'power3.out' }, 0.35)
     .from('.sw', { opacity: 0, y: 14, duration: 0.7, stagger: 0.04, ease: 'power3.out' }, 0.4);
   gsap.from('.about__copy > .label, .about__copy .lede, .proofs li, .about .link, .about__aside', { opacity: 0, y: 18, duration: 1, stagger: 0.08, ease: 'power3.out', scrollTrigger: { trigger: sections.about, start: 'top 45%' } });
-  gsap.from('.build__head .lede, .build__steps, .build__z', { opacity: 0, y: 16, duration: 1, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: sections.build, start: 'top 40%' } });
+  gsap.from('.build__top, .build__head .lede', { opacity: 0, y: 16, duration: 1, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: sections.build, start: 'top 60%' } });
+  gsap.from('.step', { opacity: 0, y: 40, duration: 1.1, stagger: 0.12, ease: 'power3.out', scrollTrigger: { trigger: '.steps', start: 'top 80%' } });
+  // The cards play the journey as you scroll through them: the bead lays down,
+  // layers stack under the nozzle, the finished part turns.
+  ScrollTrigger.create({ trigger: '.steps', start: 'top 85%', end: 'bottom 30%', onUpdate: (st) => renderSteps(st.progress) });
   gsap.from('.mats__head > .label, .mats__head .lede', { opacity: 0, y: 16, duration: 1, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: sections.mats, start: 'top 50%' } });
   gsap.from('.mats__panel', { opacity: 0, x: 30, duration: 1.2, ease: 'power3.out', scrollTrigger: { trigger: sections.mats, start: 'top 45%' } });
   gsap.from('.tab', { opacity: 0, y: 24, duration: 1, stagger: 0.06, ease: 'power3.out', scrollTrigger: { trigger: sections.mats, start: 'top 40%' } });

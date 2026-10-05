@@ -8,13 +8,13 @@
   <meta name="theme-color" content="#080808">
   <meta property="og:title" content="Pantone3D — Material made to perform">
   <meta property="og:description" content="Premium 3D printing filaments engineered for consistent flow, dependable colour and reliable results.">
-  <meta property="og:image" content="assets/img/spool-yellow.webp?v=20261005c">
+  <meta property="og:image" content="assets/img/spool-yellow.webp?v=20261005d">
   <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
 
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/manrope-latin.woff2" crossorigin>
   <link rel="preload" as="font" type="font/woff2" href="assets/fonts/inter-latin.woff2" crossorigin>
-  <link rel="preload" as="image" href="assets/img/spool-spectrum.webp?v=20261005c" imagesrcset="assets/img/spool-spectrum-sm.webp?v=20261005c 560w, assets/img/spool-spectrum.webp?v=20261005c 1000w" imagesizes="(max-width: 760px) 86vw, 56vw" fetchpriority="high">
-  <link rel="stylesheet" href="assets/css/main.css?v=20261005c">
+  <link rel="preload" as="image" href="assets/img/spool-spectrum.webp?v=20261005d" imagesrcset="assets/img/spool-spectrum-sm.webp?v=20261005d 560w, assets/img/spool-spectrum.webp?v=20261005d 1000w" imagesizes="(max-width: 760px) 86vw, 56vw" fetchpriority="high">
+  <link rel="stylesheet" href="assets/css/main.css?v=20261005d">
   <script>
     document.documentElement.classList.add('js');
     // Light or dark mode, restored before first paint so the page never flashes.
@@ -73,7 +73,7 @@
     <section class="s hero" id="top" aria-labelledby="hero-title">
       <div class="hero__spool" data-anchor="hero-spool">
         <div class="hero__spool-inner">
-          <img src="assets/img/spool-spectrum.webp?v=20261005c" srcset="assets/img/spool-spectrum-sm.webp?v=20261005c 560w, assets/img/spool-spectrum.webp?v=20261005c 1000w" sizes="(max-width: 760px) 86vw, 56vw" width="1000" height="1205" alt="Pantone3D filament spool wound with spectrum-coloured filament" fetchpriority="high">
+          <img src="assets/img/spool-spectrum.webp?v=20261005d" srcset="assets/img/spool-spectrum-sm.webp?v=20261005d 560w, assets/img/spool-spectrum.webp?v=20261005d 1000w" sizes="(max-width: 760px) 86vw, 56vw" width="1000" height="1205" alt="Pantone3D filament spool wound with spectrum-coloured filament" fetchpriority="high">
         </div>
       </div>
       <div class="wrap hero__copy">
@@ -156,8 +156,8 @@
         <p class="lede">A focused range of 3D printing materials for smooth flow, a dependable finish and real-world use.</p>
       </div>
       <div class="mats__spool" data-anchor="mats-spool">
-        <img class="mats__img is-on" src="assets/img/spool-yellow.webp?v=20261005c" srcset="assets/img/spool-yellow-sm.webp?v=20261005c 560w, assets/img/spool-yellow.webp?v=20261005c 1000w" sizes="(max-width: 760px) 70vw, 36vw" width="1000" height="1205" alt="" loading="lazy">
-        <img class="mats__img" src="assets/img/spool-yellow.webp?v=20261005c" width="1000" height="1205" alt="" loading="lazy">
+        <img class="mats__img is-on" src="assets/img/spool-yellow.webp?v=20261005d" srcset="assets/img/spool-yellow-sm.webp?v=20261005d 560w, assets/img/spool-yellow.webp?v=20261005d 1000w" sizes="(max-width: 760px) 70vw, 36vw" width="1000" height="1205" alt="" loading="lazy">
+        <img class="mats__img" src="assets/img/spool-yellow.webp?v=20261005d" width="1000" height="1205" alt="" loading="lazy">
       </div>
       <div class="mats__panel">
         <article class="mat" id="mat-pla-plus" aria-labelledby="mat-pla-plus-n">
@@ -224,32 +224,34 @@
 
     <!-- 05 — FILAMENT TO FORM ------------------------------------------------- -->
     <section class="s build" id="process" aria-labelledby="build-title">
-      <div class="wrap build__head">
-        <p class="label">05 / Process</p>
-        <h2 class="display display--md" id="build-title">
-          <span class="hl">From filament</span>
-          <span class="hl">to <span class="grad">form.</span></span>
-        </h2>
-        <p class="lede">Materials engineered for the journey between an idea and the finished print.</p>
+      <div class="wrap">
+        <div class="build__top"><p class="label">05 / Process</p><i aria-hidden="true"></i><p class="label build__flow" aria-hidden="true">Ideas <span>→</span> Materials <span>→</span> Real parts</p></div>
+        <div class="build__head">
+          <h2 class="display display--md" id="build-title">
+            <span class="hl">From filament</span>
+            <span class="hl">to <span class="grad">form.</span></span>
+          </h2>
+          <p class="lede">Materials engineered for the journey between an idea and the finished print. Layer on layer, it becomes a finished part.</p>
+        </div>
+        <ol class="steps">
+          <li class="step">
+            <div class="step__txt"><p class="step__n">01</p><h3>Filament</h3><p>High-performance materials, precisely formulated.</p></div>
+            <div class="step__media"><img src="assets/img/spool-white-sm.webp?v=20261005d" width="560" height="675" alt="Pantone3D spool of white filament" loading="lazy"></div>
+          </li>
+          <li class="step">
+            <div class="step__txt"><p class="step__n">02</p><h3>Extrusion</h3><p>Controlled heat. Consistent flow. Reliable results.</p></div>
+            <div class="step__media" aria-hidden="true"><canvas class="step__cv" data-step="extrude"></canvas><svg class="step__nozzle" viewBox="0 0 60 100" aria-hidden="true"><g class="nozzle__sink"><rect x="10" y="0" width="40" height="6" rx="1.5"/><rect x="10" y="10" width="40" height="6" rx="1.5"/><rect x="10" y="20" width="40" height="6" rx="1.5"/><rect x="10" y="30" width="40" height="6" rx="1.5"/><rect x="26" y="0" width="8" height="52"/></g><rect class="nozzle__block" x="6" y="52" width="48" height="24" rx="3"/><rect class="nozzle__heat" x="10" y="70" width="40" height="2" rx="1"/><path class="nozzle__tip" d="M21 76h18l-6 18h-6z"/></svg></div>
+          </li>
+          <li class="step">
+            <div class="step__txt"><p class="step__n">03</p><h3>Layers</h3><p>Precise layer bonding for strength, detail and consistency.</p></div>
+            <div class="step__media" aria-hidden="true"><canvas class="step__cv" data-step="layers"></canvas><svg class="step__nozzle" viewBox="0 0 60 100" aria-hidden="true"><g class="nozzle__sink"><rect x="10" y="0" width="40" height="6" rx="1.5"/><rect x="10" y="10" width="40" height="6" rx="1.5"/><rect x="10" y="20" width="40" height="6" rx="1.5"/><rect x="10" y="30" width="40" height="6" rx="1.5"/><rect x="26" y="0" width="8" height="52"/></g><rect class="nozzle__block" x="6" y="52" width="48" height="24" rx="3"/><rect class="nozzle__heat" x="10" y="70" width="40" height="2" rx="1"/><path class="nozzle__tip" d="M21 76h18l-6 18h-6z"/></svg></div>
+          </li>
+          <li class="step">
+            <div class="step__txt"><p class="step__n">04</p><h3>Object</h3><p>Ideas take shape into real, functional parts.</p></div>
+            <div class="step__media" aria-hidden="true"><canvas class="step__cv" data-step="object"></canvas></div>
+          </li>
+        </ol>
       </div>
-      <div class="build__stage" data-anchor="build-stage" aria-hidden="true">
-        <span class="build__z label">Layer <b>000</b></span>
-      </div>
-      <div class="build__bed" aria-hidden="true"></div>
-      <div class="nozzle" aria-hidden="true"><svg viewBox="0 0 60 100">
-        <defs><linearGradient id="nzBrass" x1="0" x2="1"><stop offset="0" stop-color="#8a6a22"/><stop offset=".45" stop-color="#e6c25a"/><stop offset="1" stop-color="#7a5a1a"/></linearGradient></defs>
-        <g class="nozzle__sink"><rect x="10" y="0" width="40" height="6" rx="1.5"/><rect x="10" y="10" width="40" height="6" rx="1.5"/><rect x="10" y="20" width="40" height="6" rx="1.5"/><rect x="10" y="30" width="40" height="6" rx="1.5"/><rect x="26" y="0" width="8" height="52"/></g>
-        <rect class="nozzle__block" x="6" y="52" width="48" height="24" rx="3"/>
-        <rect class="nozzle__heat" x="10" y="70" width="40" height="2" rx="1"/>
-        <path class="nozzle__tip" d="M21 76h18l-6 18h-6z"/>
-      </svg></div>
-      <ol class="wrap build__steps">
-        <li><span class="label">01</span><span class="build__step"><b>Filament</b><small>Fed from the spool into the printer.</small></span></li>
-        <li><span class="label">02</span><span class="build__step"><b>Extrusion</b><small>Melted in the hot end and pushed through the nozzle.</small></span></li>
-        <li><span class="label">03</span><span class="build__step"><b>Layers</b><small>Laid down one thin layer at a time.</small></span></li>
-        <li><span class="label">04</span><span class="build__step"><b>Object</b><small>Layer on layer, it becomes a finished part.</small></span></li>
-      </ol>
-      <canvas class="static-form" data-forms="vase" aria-hidden="true"></canvas>
     </section>
 
     <!-- 06 — CONSISTENCY ----------------------------------------------------- -->
@@ -268,7 +270,7 @@
             <div class="tile__txt"><p class="label">01</p><h3>Dimensional control</h3><p>Consistent filament behaviour.</p></div>
           </article>
           <article class="tile tile--wind">
-            <img class="tile__spool" src="assets/img/spool-yellow-sm.webp?v=20261005c" width="560" height="675" alt="Pantone3D spool with evenly wound yellow filament" loading="lazy">
+            <img class="tile__spool" src="assets/img/spool-yellow-sm.webp?v=20261005d" width="560" height="675" alt="Pantone3D spool with evenly wound yellow filament" loading="lazy">
             <div class="tile__txt"><p class="label">02</p><h3>Reliable winding</h3><p>Clean feeding from spool to machine.</p></div>
           </article>
           <article class="tile tile--col">
@@ -364,6 +366,6 @@
   <script src="assets/vendor/ScrollTrigger.min.js" defer></script>
   <script src="assets/vendor/SplitText.min.js" defer></script>
   <script src="assets/vendor/lenis.min.js" defer></script>
-  <script src="assets/js/app.js?v=20261005c" defer></script>
+  <script src="assets/js/app.js?v=20261005d" defer></script>
 </body>
 </html>
