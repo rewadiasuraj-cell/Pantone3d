@@ -212,13 +212,13 @@ main, .foot { position: relative; z-index: 2; }
   transition: color .5s var(--ease), background-color .5s var(--ease), border-color .5s var(--ease), transform .6s var(--ease);
 }
 .nav.is-solid { background: rgba(8, 8, 8, .58); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); border-bottom-color: rgba(255,255,255,.06); }
-.nav[data-theme="light"] { color: var(--ink); }
-.nav[data-theme="light"].is-solid { background: rgba(245, 244, 239, .72); border-bottom-color: rgba(0,0,0,.06); }
+.nav[data-theme="light"], html[data-mode="light"] .nav { color: var(--ink); }
+.nav[data-theme="light"].is-solid, html[data-mode="light"] .nav.is-solid { background: rgba(245, 244, 239, .72); border-bottom-color: rgba(0,0,0,.06); }
 .nav__logo { position: relative; width: clamp(122px, 9.5vw, 156px); flex: none; }
 .logo { width: 100%; transition: opacity .5s var(--ease); }
 .logo--dark { position: absolute; inset: 0; opacity: 0; }
-.nav[data-theme="light"] .logo--light { opacity: 0; }
-.nav[data-theme="light"] .logo--dark { opacity: 1; }
+.nav[data-theme="light"] .logo--light, html[data-mode="light"] .logo--light { opacity: 0; }
+.nav[data-theme="light"] .logo--dark, html[data-mode="light"] .logo--dark { opacity: 1; }
 .nav__links { display: flex; gap: clamp(22px, 2.6vw, 48px); margin-left: auto; }
 .nav__links a {
   font-size: 14px; font-weight: 500; letter-spacing: .01em;
@@ -230,6 +230,24 @@ main, .foot { position: relative; z-index: 2; }
 }
 .nav__links a:hover, .nav__links a[aria-current] { opacity: 1; }
 .nav__links a:hover::after, .nav__links a[aria-current]::after { transform: scaleX(1); transform-origin: left; }
+/* light / dark switch */
+.mode { flex: none; padding: 6px; margin: -6px 0; border-radius: 999px; }
+.mode__track {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  width: 58px; height: 30px; padding: 0 7px; border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+  transition: border-color .4s var(--ease), background-color .4s var(--ease);
+}
+.mode:hover .mode__track { border-color: color-mix(in srgb, currentColor 55%, transparent); }
+.mode svg { width: 14px; height: 14px; position: relative; z-index: 1; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; opacity: .55; transition: opacity .4s var(--ease), color .4s var(--ease); }
+.mode__moon path { fill: currentColor; stroke: none; }
+.mode i {
+  position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--yellow); transition: transform .5s var(--ease);
+}
+.mode[aria-checked="true"] i { transform: translateX(28px); }
+.mode[aria-checked="false"] .mode__moon, .mode[aria-checked="true"] .mode__sun { opacity: 1; color: var(--ink); }
 .nav__menu { display: none; width: 44px; height: 44px; margin-left: auto; position: relative; }
 .nav__menu i, .nav__menu i::before { position: absolute; left: 11px; right: 11px; height: 1.5px; background: currentColor; transition: transform .4s var(--ease); }
 .nav__menu i { top: 18px; }
@@ -495,8 +513,8 @@ main, .foot { position: relative; z-index: 2; }
 /* ---------------------------------------------------------------- final */
 .final { display: flex; align-items: center; overflow: hidden; padding: 20vh 0; }
 .final__strand { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
-.final__strand path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
-.fs-base { stroke: #8a6200; }
+.final__strand path, .acta__strand path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.fs-base { stroke: #E39C00; }
 .fs-body { stroke: var(--yellow); }
 .fs-hl { stroke: #ffe39a; opacity: .7; }
 .final__copy { position: relative; z-index: 2; }
@@ -600,7 +618,9 @@ html.js:not(.ready) .ahero__copy { opacity: 0; }
 @media (max-width: 900px) and (orientation: portrait), (max-width: 640px) {
   :root { --nav-h: 64px; --display: clamp(46px, 13.2vw, 96px); --display-md: clamp(38px, 10.6vw, 66px); --body: 16px; }
   .nav__links { display: none; }
-  .nav__menu { display: block; }
+  .nav__menu { display: block; margin-left: 0; }
+  .nav { gap: 12px; }
+  .mode { margin-left: auto; }
 
   /* hero: heading first, product second, buttons below */
   .hero { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; padding: calc(var(--nav-h) + 2.5svh) var(--pad) 3svh; }
@@ -756,3 +776,38 @@ html.static .nav.is-solid { background: rgba(8,8,8,.9); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
 }
+
+/* ==========================================================================
+   Light mode (the switch in the nav). Same layout, inverted surfaces.
+   ========================================================================== */
+html[data-mode="light"] {
+  color-scheme: light;
+  --black: #F5F4EF;
+  --graphite: #FFFFFF;
+  --graphite-2: #ECEBE6;
+  --fg: #0B0B0B;
+  --muted: rgba(11, 11, 11, .68);
+  --dim: rgba(11, 11, 11, .5);
+  --faint: rgba(11, 11, 11, .16);
+  --line: rgba(11, 11, 11, .12);
+  --panel: rgba(255, 255, 255, .78);
+  --spectrum: linear-gradient(90deg, #E9A400 0%, #F26C00 16%, #EE2459 34%, #BE1FE2 50%, #574CEB 66%, #0F78E0 82%, #00A398 100%);
+}
+html[data-mode="light"] .env__space { display: none; }
+html[data-mode="light"] .btn:not(.btn--primary):not(.btn--white):not(.btn--ink) { --bg-h: rgba(11,11,11,.06); --b: rgba(11,11,11,.32); --b-h: rgba(11,11,11,.7); }
+html[data-mode="light"] .panel { box-shadow: 0 30px 60px -30px rgba(0,0,0,.18); }
+html[data-mode="light"] .hero__cue i { border-color: rgba(11,11,11,.4); }
+html[data-mode="light"] .tab { background: rgba(255,255,255,.82); border-color: rgba(11,11,11,.12); }
+html[data-mode="light"] .tab:hover { border-color: rgba(11,11,11,.3); }
+html[data-mode="light"] .build__bed { background: radial-gradient(closest-side, rgba(0,0,0,.07), rgba(0,0,0,.03) 70%, transparent); box-shadow: inset 0 0 0 1px rgba(0,0,0,.14), 0 18px 40px rgba(0,0,0,.1); }
+html[data-mode="light"] .dia__strands rect { fill: #E4E3DE; stroke: rgba(0,0,0,.16); }
+html[data-mode="light"] .dia__gauge line, html[data-mode="light"] .dia__gauge path { stroke: rgba(0,0,0,.4); }
+html[data-mode="light"] .card { border-color: rgba(11,11,11,.09); box-shadow: 0 24px 50px -30px rgba(0,0,0,.2); }
+html[data-mode="light"] .card:hover, html[data-mode="light"] .card:focus-within { border-color: rgba(11,11,11,.22); }
+html[data-mode="light"] .card__obj { filter: drop-shadow(0 16px 18px rgba(0,0,0,.25)); }
+html[data-mode="light"] .arrow { border-color: rgba(11,11,11,.3); }
+html[data-mode="light"] .arrow:hover, html[data-mode="light"] .arrow:focus-visible, html[data-mode="light"] .card:hover .arrow { background: var(--ink); color: var(--off); border-color: var(--ink); }
+html[data-mode="light"] .dots i { box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
+html[data-mode="light"] .foot__logo { filter: invert(1); }
+html[data-mode="light"].static .nav.is-solid { background: rgba(245,244,239,.9); }
+html[data-mode="light"] .tile--wind { color: var(--off); --muted: rgba(255,255,255,.72); --dim: rgba(255,255,255,.55); }

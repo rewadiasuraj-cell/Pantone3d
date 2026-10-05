@@ -17,6 +17,8 @@
   <link rel="stylesheet" href="assets/css/main.css">
   <script>
     document.documentElement.classList.add('js');
+    // Light or dark mode, restored before first paint so the page never flashes.
+    try { if (localStorage.getItem('p3d-mode') === 'light') document.documentElement.dataset.mode = 'light'; } catch (e) {}
     // Safety net: never leave the page hidden if scripts fail to run.
     setTimeout(function () { var r = document.documentElement; if (!r.classList.contains('ready')) r.classList.add('static', 'ready'); }, 4000);
   </script>
@@ -45,6 +47,13 @@
       <a href="#applications" data-nav="applications">Applications</a>
       <a href="#contact" data-nav="contact" data-contact hidden>Contact</a>
     </nav>
+    <button class="mode" type="button" role="switch" aria-checked="false" aria-label="Light mode">
+      <span class="mode__track" aria-hidden="true">
+        <svg class="mode__moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+        <svg class="mode__sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/></svg>
+        <i></i>
+      </span>
+    </button>
     <button class="nav__menu" type="button" aria-expanded="false" aria-controls="menu"><span class="sr">Menu</span><i aria-hidden="true"></i></button>
   </header>
   <div class="menu" id="menu" hidden>

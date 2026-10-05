@@ -28,6 +28,8 @@ const isMobile = () => mqMobile.matches;
 const YELLOW = hexToRgb(BRAND_YELLOW);
 const DARK = [8, 8, 8];
 const SOFT = [245, 244, 239];
+// The page colour the strand fades into with depth: follows the light / dark switch.
+const baseFog = () => (root.dataset.mode === 'light' ? SOFT : DARK);
 const SPECTRUM = ['#FFD400', '#FF8A00', '#FF2E63', '#D82CFF', '#6A5CFF', '#138CFF', '#00D5C8'].map(hexToRgb);
 const rgbOf = (key) => hexToRgb(COLOURS[key].hex);
 const mixRgb = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
@@ -232,7 +234,7 @@ function renderStaticForms() {
     const pts = objectForm(shape, { x: 0, y: 0, s }, { rx: 0.42, ry: 0.4 }, 760);
     const it = { id: 's', pts, color: YELLOW, alpha: 1, width: layerPitch(shape, s) * 0.95 };
     if (shape === 'sculpt') Object.assign(it, { grad: SPECTRUM, gradAmt: 1 });
-    r.render([it], DARK);
+    r.render([it], baseFog());
   });
 }
 
@@ -240,7 +242,8 @@ if (reduced) {
   root.classList.add('ready');
   renderStaticForms();
   let t; addEventListener('resize', () => { clearTimeout(t); t = setTimeout(renderStaticForms, 200); });
-  ScrollTrigger.create({ trigger: '.colour', start: 'top 40px', end: 'bottom 40px', onToggle: (s) => { nav.dataset.theme = s.isActive ? 'light' : 'dark'; } });
+  addEventListener('modechange', renderStaticForms);
+  ScrollTrigger.create({ trigger: '.colour', start: 'top 40px', end: 'bottom 40px', onToggle: (s) => { nav.dataset.theme = s.isActive || root.dataset.mode === 'light' ? 'light' : 'dark'; } });
 } else {
   initMotion();
 }
@@ -313,7 +316,7 @@ function initMotion() {
   }
 
   const item = (id, pts, color, o = {}) => ({ id, pts, color, alpha: 1, width: W0, r0: 0, r1: 1, gradAmt: 0, ...o });
-  const env = (o = {}) => ({ glow: 0, glowRGB: YELLOW, space: 0, light: 0, fog: DARK, ...o });
+  const env = (o = {}) => ({ glow: 0, glowRGB: YELLOW, space: 0, light: 0, fog: baseFog(), ...o });
   let clock = 0;
 
   // ---------------------------------------------------------------- section states
@@ -383,7 +386,7 @@ function initMotion() {
         r1: 0.02 + 0.98 * ease(range(p, 0.03 + d, 0.3 + d)),
       }));
     });
-    return { items, env: env({ light: open, fog: mixRgb(DARK, SOFT, open) }) };
+    return { items, env: env({ light: open, fog: mixRgb(baseFog(), SOFT, open) }) };
   }
 
   const buildBox = () => ({ x: A['build-stage'].x, y: A['build-stage'].y + A['build-stage'].h * 0.08, s: A['build-stage'].w * 1.25 });
@@ -537,7 +540,7 @@ function initMotion() {
     const o = e.light;
     const clip = o <= 0.001 ? 'ellipse(0% 0% at 58% -12%)' : `ellipse(${(o * 104).toFixed(2)}% ${(o * 158).toFixed(2)}% at 58% -12%)`;
     if (envCache.clip !== clip) { envEls.light.style.clipPath = clip; envCache.clip = clip; }
-    const theme = e.light > 0.55 ? 'light' : 'dark';
+    const theme = e.light > 0.55 || root.dataset.mode === 'light' ? 'light' : 'dark';
     if (nav.dataset.theme !== theme) nav.dataset.theme = theme;
   }
 

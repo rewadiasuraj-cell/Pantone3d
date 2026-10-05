@@ -709,6 +709,19 @@ function initSite({ getLenis = () => null } = {}) {
   addEventListener('scroll', solid, { passive: true });
   solid();
 
+  // Light / dark mode switch. The choice is remembered in this browser only.
+  const root = document.documentElement;
+  const modeBtn = $('.mode');
+  const syncMode = () => modeBtn?.setAttribute('aria-checked', root.dataset.mode === 'light');
+  modeBtn?.addEventListener('click', () => {
+    const light = root.dataset.mode !== 'light';
+    if (light) root.dataset.mode = 'light'; else delete root.dataset.mode;
+    try { localStorage.setItem('p3d-mode', light ? 'light' : 'dark'); } catch (e) {}
+    syncMode();
+    dispatchEvent(new CustomEvent('modechange'));
+  });
+  syncMode();
+
   // Current page
   const page = document.body.dataset.page;
   $$(`[data-nav="${page}"]`).forEach((a) => a.setAttribute('aria-current', 'page'));
@@ -760,9 +773,10 @@ function layoutHero() {
   renderHero();
 }
 function renderHero() {
-  R.render(strands.map((s) => ({ ...s, alpha: 1, r0: 0, r1: clamp01(0.02 + 0.98 * ease(range(draw.v, s.d, 0.7 + s.d))), fogScale: 0.8 })), [8, 8, 8]);
+  R.render(strands.map((s) => ({ ...s, alpha: 1, r0: 0, r1: clamp01(0.02 + 0.98 * ease(range(draw.v, s.d, 0.7 + s.d))), fogScale: 0.8 })), document.documentElement.dataset.mode === 'light' ? [245, 244, 239] : [8, 8, 8]);
 }
 layoutHero();
+addEventListener('modechange', renderHero);
 let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(layoutHero, 150); });
 
 /* ---------------------------------------------------------------- closing strand */
