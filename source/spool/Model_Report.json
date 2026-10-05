@@ -1,0 +1,12 @@
+{
+  "diameter_mm": 200,
+  "flange_outer_width_mm": 68,
+  "overall_width_with_collars_mm": 71.4,
+  "bore_mm": 52,
+  "strand_diameter_mm": 1.75,
+  "parts": 9,
+  "vertices": 187442,
+  "faces": 174632,
+  "quad_faces": 171042,
+  "assumptions": "Width, bore, small features inferred from one perspective image. Brand lettering recreated, not original artwork."
+}

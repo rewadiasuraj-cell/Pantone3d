@@ -14,6 +14,7 @@ import {
 import { StrandRenderer, hexToRgb } from './strand.js';
 import { BRAND_YELLOW, COLOURS, COLOUR_STORY, MATERIALS, APPLICATIONS, spoolSrc, texSrc } from './data.js';
 import { initSite } from './site.js';
+import { spool3DSupported, loadSpool3D } from './spool3d.js';
 
 const { gsap, ScrollTrigger, SplitText } = window;
 const $ = (s, r = document) => r.querySelector(s);
@@ -558,7 +559,7 @@ function initMotion() {
       const p = clamp01((y - s.st.start) / Math.max(1, s.st.end - s.st.start));
       if (y >= s.st.start - vh() && y <= s.st.end + vh()) s.update(p, y);
     });
-    travelUpdate(y);
+    spoolUpdate(y, time, travelUpdate(y));
     const S = stateAt(y);
     applyEnv(S.env);
     const back = [], fr = [];
@@ -594,6 +595,7 @@ function initMotion() {
       if (scrollY > heroST.end) return;
       const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;
       ry(nx * 3); rx(-ny * 2.4); tx(nx * 8); // ≤ 1.5° / 1.2°
+      spoolPose.tx = nx; spoolPose.ty = ny;
     });
   }
 
@@ -615,19 +617,88 @@ function initMotion() {
   }
   let travelOn = null;
   function travelUpdate(y) {
-    if (!T) return;
-    const on = y > 2;
+    if (!T) return false;
+    // With the 3D spool live, the travel box carries it from the very top.
+    const on = y > 2 || !!spool3d;
     if (on !== travelOn) { travelOn = on; travel.style.visibility = on ? 'visible' : 'hidden'; heroWrap.style.visibility = on ? 'hidden' : 'visible'; }
-    if (!on) return;
+    if (!on) return false;
     const a0 = aboutST.start, a1 = aboutST.end;
     const t = ease(range(y, 0, a0));
     const x = lerp(T.hero.x, T.about.x, t);
     const top = lerp(T.hero.y, T.about.y, t) + (y > a1 ? a1 - y : 0);
-    if (top < -T.hero.h * 1.2) { travel.style.opacity = '0'; return; }
+    if (top < -T.hero.h * 1.2) { travel.style.opacity = '0'; return false; }
     travel.style.opacity = '1';
     travel.style.transform = `translate3d(${x.toFixed(1)}px, ${top.toFixed(1)}px, 0)`;
     const lean = Math.sin((y / innerHeight) * 1.6) * 7;
     travelPhoto.style.transform = `rotate(${lean.toFixed(2)}deg)`;
+    return true;
+  }
+
+  // The real 3D spool. It loads after the page and takes over from the photos
+  // (hero → About, then the Materials stage) once it can draw; the photos stay
+  // as the fallback for reduced motion, no WebGL 2, file:// and low-end or
+  // data-saving phones. Scroll turns it, rolls it on its axle and, in
+  // Materials, rewinds it in the selected material's colour.
+  const matsStage = $('.mats__spool');
+  const spoolPose = { x: 0, y: 0, tx: 0, ty: 0, rgb: [...YELLOW], matte: 0, t: 0 };
+  let spool3d = null, spoolHost = null;
+  function sizeSpool() {
+    if (!spool3d || !spoolHost) return;
+    const el = spoolHost === 'mats' ? matsStage : travel;
+    // offsetWidth/Height ignore the intro scale tweens, which the canvas inherits anyway.
+    const bw = el.offsetWidth, bh = el.offsetHeight;
+    spool3d.size(bw * 1.4, bh * 1.3, bh * 1.03);
+  }
+  function hostSpool(where) {
+    if (where === spoolHost) return;
+    spoolHost = where;
+    (where === 'mats' ? matsStage : travel).appendChild(spool3d.canvas);
+    sizeSpool();
+  }
+  function spoolUpdate(y, time, travelVisible) {
+    if (!spool3d) return;
+    const inMats = y > matST.start - vh() * 1.05 && y < matST.end + vh() * 1.05;
+    if (!inMats && !travelVisible) return;
+    hostSpool(inMats ? 'mats' : 'travel');
+    // Frame-rate independent easing towards pointer and colour targets.
+    const k = 1 - Math.exp(-Math.min(0.1, time - spoolPose.t || 0) * 7);
+    spoolPose.t = time;
+    spoolPose.x = lerp(spoolPose.x, spoolPose.tx, k * 0.5);
+    spoolPose.y = lerp(spoolPose.y, spoolPose.ty, k * 0.5);
+    const m = inMats ? MATERIALS[Math.max(0, matIndex)] : null;
+    spoolPose.rgb = mixRgb(spoolPose.rgb, m ? rgbOf(m.colour) : YELLOW, k);
+    spoolPose.matte = lerp(spoolPose.matte, m && m.matte ? 1 : 0, k);
+    // At rest it only sways a little, so the wordmark reads; scroll does the turning.
+    const idle = Math.sin(time * 0.6) * 0.06;
+    let pose;
+    if (inMats) {
+      const p = (y - matST.start) / Math.max(1, matST.end - matST.start);
+      pose = { ry: lerp(-0.85, 0.65, clamp01(p)), rx: 0.06, spin: -p * TAU * 1.25 - idle, roll: 0 };
+    } else {
+      const t = ease(range(y, 0, aboutST.start)), u = y / innerHeight;
+      pose = {
+        ry: lerp(-0.86, 0.55, t) + spoolPose.x * 0.3,
+        rx: lerp(0.14, -0.04, t) - spoolPose.y * 0.16,
+        spin: -u * 1.4 - idle,
+        roll: Math.sin(u * 1.6) * 0.05,
+      };
+    }
+    pose.rgb = spoolPose.rgb;
+    pose.matte = spoolPose.matte;
+    spool3d.render(pose);
+    if (!root.classList.contains('has-3d')) requestAnimationFrame(() => spool3d && root.classList.add('has-3d'));
+  }
+  if (spool3DSupported(isMobile())) {
+    const start = () => loadSpool3D({ dpr: isMobile() ? 1.5 : 2 }).then((s) => {
+      s.canvas.addEventListener('webglcontextlost', () => {
+        root.classList.remove('has-3d'); s.canvas.remove(); spool3d = null; spoolHost = null; travelOn = null;
+      });
+      spool3d = s;
+      travelOn = null;
+    }).catch((e) => console.warn('3D spool unavailable; keeping the photos.', e));
+    // After the page (and its hero photo) has loaded, so the model never competes with first paint.
+    if (document.readyState === 'complete') setTimeout(start, 200);
+    else addEventListener('load', () => setTimeout(start, 200));
   }
 
   // Story
@@ -772,7 +843,7 @@ function initMotion() {
 
   // ---------------------------------------------------------------- lifecycle
   ScrollTrigger.addEventListener('refreshInit', () => { lastH = -9999; });
-  ScrollTrigger.addEventListener('refresh', () => { measure(); layoutFinal(); applyFinal(); measureTravel(); travelOn = null; });
+  ScrollTrigger.addEventListener('refresh', () => { measure(); layoutFinal(); applyFinal(); measureTravel(); travelOn = null; sizeSpool(); });
   measure();
   measureTravel();
   layoutFinal();

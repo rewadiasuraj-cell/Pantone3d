@@ -21,17 +21,21 @@ assets/js/app.js        generated bundle for index.html (do not edit, see below)
 assets/js/about.js      generated bundle for about.html
 assets/fonts/           self-hosted Manrope (display) + Inter (body/UI), SIL OFL licences included
 assets/img/             spool cut-outs per colour, filament close-ups (tex-*, detail-*), logos, favicon
-assets/vendor/          GSAP 3.13 (core, ScrollTrigger, SplitText) + Lenis 1.3
+assets/models/spool.glb the 3D spool (meshopt-compressed glTF, ~440 KB), built from source/spool/
+assets/vendor/          GSAP 3.13 (core, ScrollTrigger, SplitText) + Lenis 1.3 + a three.js r186 subset (three-spool.min.js)
 src/forms.js            filament forms: hero trail, orbit rings, colour ribbon, coil, wave, layer, printed objects
 src/strand.js           2D-canvas renderer: depth-sorted, shaded cylindrical strand with spectrum, glow and shadow
 src/data.js             materials, colours, applications, contact details  <- content lives here
 src/site.js             shared nav, mobile menu, footer contact, current-page state
+src/spool3d.js          the 3D spool: loads three.js + the model on demand, renders one small canvas
 src/main.js             landing page scroll choreography ("director"), UI, interactions
 src/about.js            About page motion
-source/                 original supplied brand assets (logo, spool photo)
+source/                 original supplied brand assets (logo, spool photo, spool/ 3D model export)
 tools/build_assets.py   cuts out + recolours the spool photo, builds logo variants
 tools/build_details.py  crops filament close-ups from the same photography
 tools/bundle.mjs        bundles /src into assets/js/app.js and assets/js/about.js
+tools/build_spool3d*    rebuilds assets/models/spool.glb from source/spool/ (see 3D spool below)
+tools/build_three.mjs   rebuilds assets/vendor/three-spool.min.js
 ```
 
 After editing anything in `src/`, run:
@@ -47,6 +51,19 @@ python3 tools/build_assets.py && python3 tools/build_details.py
 ```
 
 Spool colour variants are made by re-shading **only the filament pixels** of the supplied product photo. The spool geometry is never altered. Close-ups are crops of the same photography; nothing is painted in.
+
+### 3D spool
+
+On the home page the hero spool, its slide into About and the Materials spool are a real 3D model rendered with WebGL. Scroll turns it and rolls it on its axle; in Materials it takes the selected material's colour and finish. three.js and the model load only after the page has loaded, and the product photos stay underneath until the model can draw. The photos remain the whole experience with reduced motion, without WebGL 2, when opened from disk (`file://`), and on data-saving connections or low-memory phones.
+
+The model comes from the supplied Blender export in `source/spool/` (modelled from one product photo, not manufacturer CAD). To rebuild it:
+
+```
+pip install pillow numpy && python3 tools/build_spool3d_textures.py    # flange texture with the real logo lettering
+npm i --no-save @gltf-transform/core @gltf-transform/extensions @gltf-transform/functions meshoptimizer sharp
+node tools/build_spool3d.mjs                                             # -> assets/models/spool.glb
+npm i --no-save three@0.186.1 esbuild && node tools/build_three.mjs     # -> assets/vendor/three-spool.min.js
+```
 
 ### Contact details
 
