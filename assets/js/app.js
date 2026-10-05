@@ -709,7 +709,7 @@ const APPLICATIONS = [
   { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', icon: 'flower', colour: 'red' },
 ];
 
-const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261005b`;
+const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261005c`;
 /* Close-up of the wound filament, cropped from the same product photography. */
 const texSrc = (colour) => `assets/img/tex-${colour}.webp`;
 
@@ -1364,38 +1364,54 @@ function initMotion() {
     });
   }
 
-  // The hero spool travels: it slides down into About, rolling as the page
-  // scrolls, rests there while About is pinned, then leaves with the section.
+  // The hero spool travels: it slides down into About and turns in real 3D as
+  // the page scrolls. The photo hands over to a built spool (two flanges and a
+  // wound drum as CSS 3D planes), so it can turn without ever being stretched.
   const travel = document.createElement('div');
   travel.className = 'spool-travel';
   travel.setAttribute('aria-hidden', 'true');
-  travel.innerHTML = `<img src="${heroImg.currentSrc || heroImg.src}" alt="">`;
+  const DRUM = 48;
+  const drumStrips = Array.from({ length: DRUM }, (_, i) => {
+    const t = i / DRUM;
+    const c = SPECTRUM[Math.floor(t * SPECTRUM.length) % SPECTRUM.length], d = SPECTRUM[Math.ceil(t * SPECTRUM.length) % SPECTRUM.length];
+    const f = t * SPECTRUM.length % 1, col = mixRgb(c, d, f).map(Math.round).join(',');
+    return `<i style="--a:${(t * 360).toFixed(2)}deg;--c:${col}"></i>`;
+  }).join('');
+  const flange = (cls) => `<div class="s3d__flange ${cls}"><b class="s3d__logo">pantone</b><span class="s3d__win s3d__win--l"></span><span class="s3d__win s3d__win--r"></span><span class="s3d__hub"></span></div>`;
+  travel.innerHTML = `<img class="spool-travel__photo" src="${heroImg.currentSrc || heroImg.src}" alt="">
+    <div class="s3d"><div class="s3d__body">${flange('s3d__flange--front')}${flange('s3d__flange--back')}<div class="s3d__drum">${drumStrips}</div><div class="s3d__core"></div></div></div>`;
   document.body.appendChild(travel);
+  const travelPhoto = $('.spool-travel__photo', travel), s3d = $('.s3d', travel), s3dBody = $('.s3d__body', travel);
   const heroWrap = $('.hero__spool');
   let T = null;
   function measureTravel() {
     const rel = (el, sec) => { const r = el.getBoundingClientRect(), q = sec.getBoundingClientRect(); return { x: r.left - q.left, y: r.top - q.top, w: r.width, h: r.height }; };
     const h = rel(heroWrap, sections.hero), a = rel($('.about__stage'), sections.about);
-    // same size as in the hero, centred on the About stage
     T = { hero: h, about: { x: a.x + a.w / 2 - h.w / 2, y: a.y + a.h / 2 - h.h / 2, w: h.w, h: h.h } };
     travel.style.width = `${h.w}px`; travel.style.height = `${h.h}px`;
+    travel.style.setProperty('--D', `${(h.w * 0.9).toFixed(1)}px`);
   }
   let travelOn = null;
+  // Pose of the photo: flange face turned towards the viewer's left, drum on the right.
+  const POSE_Y = -38, POSE_X = -6;
   function travelUpdate(y) {
     if (!T) return;
     const on = y > 2;
     if (on !== travelOn) { travelOn = on; travel.style.visibility = on ? 'visible' : 'hidden'; heroWrap.style.visibility = on ? 'hidden' : 'visible'; }
     if (!on) return;
     const a0 = aboutST.start, a1 = aboutST.end;
-    // glide across the screen while About rises underneath, then leave with it
     const t = ease(range(y, 0, a0));
     const x = lerp(T.hero.x, T.about.x, t);
     const top = lerp(T.hero.y, T.about.y, t) + (y > a1 ? a1 - y : 0);
     if (top < -T.hero.h * 1.2) { travel.style.opacity = '0'; return; }
     travel.style.opacity = '1';
-    // turns left and right about its upright axis; never tips over
-    const turn = 32 * Math.sin((y / innerHeight) * 1.7);
-    travel.style.transform = `translate3d(${x.toFixed(1)}px, ${top.toFixed(1)}px, 0) perspective(1400px) rotateY(${turn.toFixed(2)}deg)`;
+    travel.style.transform = `translate3d(${x.toFixed(1)}px, ${top.toFixed(1)}px, 0)`;
+    const swap = smooth(range(y, innerHeight * 0.04, innerHeight * 0.22));
+    travelPhoto.style.opacity = (1 - swap).toFixed(3);
+    s3d.style.opacity = swap.toFixed(3);
+    // a full turn about the upright axis across the journey, always upright
+    const spin = POSE_Y + (y / innerHeight - 0.13) * 140;
+    s3dBody.style.transform = `rotateX(${POSE_X}deg) rotateY(${spin.toFixed(2)}deg)`;
   }
 
   // Story
