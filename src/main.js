@@ -393,11 +393,11 @@ function initMotion() {
   function colourState(p) {
     const open = smooth(range(p, 0, 0.12)) * (1 - smooth(range(p, 0.88, 1)));
     const WR = W0 * 1.9;
-    const items = [item('main', F.ribbon0, colourRGB.cur, { width: WR, shadow: open, fogScale: 0.35 })];
+    const items = [item('main', F.ribbon0, colourRGB.cur, { width: WR, shadow: open, fogScale: 0.35, band: 'ribbon' })];
     RIBBON.forEach((key, j) => {
       const d = Math.abs(RIBBON_K[j]) * 0.02;
       items.push(item('rb' + j, F.ribbon[j], rgbOf(key), {
-        width: WR, alpha: open, shadow: open, fogScale: 0.35, matte: key === 'white' || key === 'grey',
+        width: WR, alpha: open, shadow: open, fogScale: 0.35, matte: key === 'white' || key === 'grey', band: 'ribbon',
         r1: 0.02 + 0.98 * ease(range(p, 0.03 + d, 0.3 + d)),
       }));
     });

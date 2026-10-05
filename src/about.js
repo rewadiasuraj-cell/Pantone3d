@@ -36,7 +36,7 @@ function layoutHero() {
   const N = mob ? 220 : 360;
   strands = RIBBON.map((key, j) => {
     const k = j - (RIBBON.length - 1) / 2;
-    return { id: key, pts: waveRibbon(L, k, W * 1.12, N, ctrl), color: hexToRgb(COLOURS[key].hex), width: W, matte: key === 'white' || key === 'grey', d: Math.abs(k) * 0.04 };
+    return { id: key, pts: waveRibbon(L, k, W * 1.12, N, ctrl), color: hexToRgb(COLOURS[key].hex), width: W, matte: key === 'white' || key === 'grey', band: 'ribbon', d: Math.abs(k) * 0.04 };
   });
   renderHero();
 }
