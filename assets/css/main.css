@@ -120,10 +120,9 @@ ol, ul { list-style: none; }
   box-decoration-break: clone; -webkit-box-decoration-break: clone;
 }
 .grad--light { background-image: var(--spectrum-light); }
-.grad--live { background-size: 200% 100%; animation: grad-pan 12s ease-in-out infinite alternate; }
-@keyframes grad-pan { from { background-position: 0% 50%; } to { background-position: 45% 50%; } }
-.grad--live { background-image: linear-gradient(90deg, #FFD400 0%, #FF8A00 8%, #FF2E63 17%, #D82CFF 25%, #6A5CFF 33%, #138CFF 41%, #00D5C8 50%, #138CFF 59%, #6A5CFF 67%, #D82CFF 75%, #FF2E63 83%, #FF8A00 92%, #FFD400 100%); }
-.grad--live.grad--light { background-image: linear-gradient(90deg, #E9A400 0%, #F26C00 8%, #EE2459 17%, #BE1FE2 25%, #574CEB 33%, #0F78E0 41%, #00A398 50%, #0F78E0 59%, #574CEB 67%, #BE1FE2 75%, #EE2459 83%, #F26C00 92%, #E9A400 100%); }
+/* the whole spectrum stays readable in the word; it only drifts a little, very slowly */
+.grad--live { background-size: 125% 100%; animation: grad-pan 12s ease-in-out infinite alternate; }
+@keyframes grad-pan { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
 
 /* ---------------------------------------------------------------- buttons */
 .ctas { display: flex; flex-wrap: wrap; gap: 14px; }
