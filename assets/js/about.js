@@ -152,7 +152,8 @@ function aboutForm(L, box, N) {
 /* Colour section: a ribbon of parallel strands that enters from the upper
  * left, sweeps across the top of the section and opens out to the right.
  * k = strand index offset from the ribbon centre (…, -1, 0, 1, …). */
-function waveRibbon(L, k, gap, N, ctrl) {
+/* flat: a calm ribbon that keeps its strands side by side, with no twist. */
+function waveRibbon(L, k, gap, N, ctrl, flat = false) {
   const { ax, ay } = L;
   const base = catmull(ctrl || [
     at(-ax - 0.5, -ay * 0.92, 0.3),
@@ -163,8 +164,8 @@ function waveRibbon(L, k, gap, N, ctrl) {
   ]);
   const fn = (t) => {
     const p = base(t);
-    const fan = 0.45 + 1.1 * t;
-    const tw = 0.4 + t * 1.6;
+    const fan = flat ? 0.85 + 0.3 * t : 0.45 + 1.1 * t;
+    const tw = flat ? 0.3 : 0.4 + t * 1.6;
     const off = k * gap * fan;
     return [p[0] - off * 0.18, p[1] + off * Math.cos(tw), p[2] + off * Math.sin(tw) * 1.2];
   };
@@ -270,11 +271,12 @@ const SHAPES = {
   sculpt:   { turns: 30, h: 1.3, prof: (v) => 0.22 + 0.2 * Math.sin(Math.PI * (0.12 + v * 0.8)) ** 1.4 - 0.05 * v, n: 12, round: 0.55, twist: 2.2 },
 };
 
-/* box = {x, y, s}; s scales the object; rot = {rx, ry}; z adds depth. */
-function objectForm(shape, box, rot, N, z = 0) {
+/* box = {x, y, s}; s scales the object; rot = {rx, ry}; z adds depth;
+ * turns overrides the layer count (more, thinner layers read as a finished print). */
+function objectForm(shape, box, rot, N, z = 0, turns = SHAPES[shape].turns) {
   const S = SHAPES[shape];
   const out = new Float32Array(N * 3);
-  const s = box.s, turns = S.turns, h = S.h;
+  const s = box.s, h = S.h;
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1);
     const a = t * turns * TAU;
@@ -291,7 +293,7 @@ function objectForm(shape, box, rot, N, z = 0) {
 }
 
 /* Layer pitch of an object in world units, used to size the strand so layers touch. */
-const layerPitch = (shape, s) => (SHAPES[shape].h * s) / SHAPES[shape].turns;
+const layerPitch = (shape, s, turns = SHAPES[shape].turns) => (SHAPES[shape].h * s) / turns;
 
 function mix(a, b, t, out) {
   const n = a.length;
@@ -501,7 +503,7 @@ class StrandRenderer {
     if (it.grad && it.gradAmt > 0) base = mixStops(base, it.grad, it.gradCycle ? f + (it.gradShift || 0) : f, it.gradCycle, it.gradAmt);
     const col = (m, add = 0) => [0, 1, 2].map((q) => (base[q] * m + add) * (1 - fogT) + fog[q] * fogT);
     const hl = it.matte ? 0.18 : 0.42;
-    return [col(lit * 0.5), col(lit * 0.92), col(lit * (1 - hl), 255 * hl * lit), col(1.1, 20)];
+    return [col(lit * 0.8), col(lit * 0.96), col(lit * (1 - hl), 255 * hl * lit), col(1.1, 20)];
   }
 
   /* A solid colour, or a gradient along the chunk when its two ends differ. */
