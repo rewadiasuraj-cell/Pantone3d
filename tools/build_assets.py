@@ -114,17 +114,24 @@ def recolour(a, fm, target, matte=False):
 def save(rgb, alpha, name):
     arr = np.dstack([rgb, alpha[..., None]])
     img = Image.fromarray((np.clip(arr, 0, 1) * 255).astype(np.uint8), "RGBA")
-    bbox = img.getbbox()
-    img = img.crop(bbox)
+    img = img.crop(img.getbbox())
+    # every spool sits centred on the same 1000x1205 canvas the layout expects
+    W, H = 1000, 1205
+    k = min(996 / img.width, 1180 / img.height)
+    img = img.resize((round(img.width * k), round(img.height * k)), Image.LANCZOS)
+    canvas = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    canvas.paste(img, ((W - img.width) // 2, (H - img.height) // 2), img)
     for width, suffix in ((1000, ""), (560, "-sm")):
-        im = img.resize((width, round(img.height * width / img.width)), Image.LANCZOS)
-        im.save(os.path.join(OUT, f"spool-{name}{suffix}.webp"), "WEBP", quality=86, method=6)
-    return img.size
+        im = canvas if width == W else canvas.resize((width, round(H * width / W)), Image.LANCZOS)
+        im.save(os.path.join(OUT, f"spool-{name}{suffix}.webp"), "WEBP", quality=90, method=6)
+    return canvas.size
 
 
 def main():
-    src = Image.open(os.path.join(SRC, "spool-yellow.jpg"))
-    a, alpha = cutout(src)
+    # the clean studio cutout: drop the faint haze around it so no edge or shadow remains
+    src = Image.open(os.path.join(SRC, "spool-yellow.png")).convert("RGBA")
+    a = np.asarray(src.convert("RGB")).astype(np.float32) / 255
+    alpha = np.clip((np.asarray(src.getchannel("A")).astype(np.float32) - 24) / 206, 0, 1)
     fm = filament_mask(a)
     sample = a[fm > 0.95]
     brand = tuple(int(x) for x in (np.median(sample, 0) * 255))
