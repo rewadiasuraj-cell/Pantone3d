@@ -298,3 +298,61 @@ export function mix(a, b, t, out) {
   for (let i = 0; i < n; i++) out[i] = a[i] + (b[i] - a[i]) * t;
   return out;
 }
+
+/* ---------------------------------------------------------------- application icons
+ * Each icon is ONE continuous line (the filament never breaks), drawn in a
+ * [-1, 1] box. Straight runs stay straight; curves are sampled densely. */
+const arc = (cx, cy, r, a0, a1, n = 24) => Array.from({ length: n + 1 }, (_, i) => {
+  const a = (a0 + (a1 - a0) * (i / n)) * Math.PI / 180;
+  return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+});
+export const ICONS = {
+  // an isometric cube: form and fit
+  cube: () => [[-0.87, -0.5], [0, -1], [0.87, -0.5], [0, 0], [-0.87, -0.5], [-0.87, 0.5], [0, 1], [0.87, 0.5], [0.87, -0.5], [0, 0], [0, 1]],
+  // a light bulb: an idea taking shape
+  bulb: () => [[-0.24, 0.5], [-0.3, 0.18], ...arc(0, -0.28, 0.56, 125, 415, 48), [0.3, 0.18], [0.24, 0.5], [-0.24, 0.5], [-0.22, 0.66], [0.22, 0.66], [0.16, 0.82], [-0.16, 0.82]],
+  // a mortarboard: learning by making
+  cap: () => [[-1, -0.25], [0, -0.68], [1, -0.25], [0, 0.18], [-1, -0.25], [-0.58, -0.07], [-0.58, 0.38], ...Array.from({ length: 21 }, (_, i) => { const x = -0.58 + 1.16 * (i / 20); return [x, 0.38 + 0.18 * (1 - (x / 0.58) ** 2)]; }), [0.58, -0.07], [0.86, -0.2], [0.86, 0.48]],
+  // a wrench: weekend builds
+  wrench: () => [...arc(0, -0.45, 0.46, -60, 62, 18), [0.14, 0.02], [0.14, 0.82], ...arc(0, 0.82, 0.14, 0, 180, 10), [-0.14, 0.02], ...arc(0, -0.45, 0.46, 118, 240, 18), [-0.12, -0.6], [0.12, -0.6], [0.23, -0.85]],
+  // a gear: parts meant to be used
+  gear: () => {
+    const out = [];
+    for (let i = 0; i <= 240; i++) {
+      const a = (i / 240) * TAU - Math.PI / 2;
+      const r = 0.74 + 0.16 * Math.tanh(6 * Math.sin(a * 10));
+      out.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    out.push([0, -0.3], ...arc(0, 0, 0.3, -90, 270, 30));
+    return out;
+  },
+  // a five-petal flower: sculptural and decorative forms
+  flower: () => Array.from({ length: 301 }, (_, i) => {
+    const a = (i / 300) * Math.PI;
+    const r = 0.9 * Math.cos(5 * a);
+    return [Math.cos(a - Math.PI / 2) * r, Math.sin(a - Math.PI / 2) * r];
+  }),
+};
+
+/* Resample a 2D polyline to N points evenly by length and place it in 3D:
+ * box = {x, y, s} (s = half size), rot = {ry, rx}, z offset. */
+export function iconForm(name, box, rot, N, z = 0) {
+  const pts = ICONS[name]();
+  const acc = [0];
+  for (let i = 1; i < pts.length; i++) acc.push(acc[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = acc[acc.length - 1] || 1;
+  const out = new Float32Array(N * 3);
+  let k = 0;
+  for (let j = 0; j < N; j++) {
+    const s = (j / (N - 1)) * total;
+    while (k < pts.length - 2 && acc[k + 1] < s) k++;
+    const f = clamp01((s - acc[k]) / (acc[k + 1] - acc[k] || 1));
+    const x = lerp(pts[k][0], pts[k + 1][0], f) * box.s, y = lerp(pts[k][1], pts[k + 1][1], f) * box.s;
+    const [px, py, pz] = rotYX(x, y, 0, rot.ry, rot.rx);
+    const o = j * 3;
+    out[o] = box.x + px * (FOCAL + z + pz) / FOCAL;
+    out[o + 1] = box.y + py * (FOCAL + z + pz) / FOCAL;
+    out[o + 2] = pz + z;
+  }
+  return out;
+}

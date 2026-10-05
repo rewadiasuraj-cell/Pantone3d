@@ -8,7 +8,7 @@
  * pass in front of a product.
  */
 import {
-  heroForm, aboutForm, waveRibbon, straightForm, coilForm, waveForm, layerForm, objectForm, layerPitch, SHAPES,
+  heroForm, aboutForm, iconForm, waveRibbon, straightForm, coilForm, waveForm, layerForm, objectForm, layerPitch, SHAPES,
   mix, ease, smooth, range, lerp, clamp01, catmull, path, at, TAU,
 } from './forms.js';
 import { StrandRenderer, hexToRgb } from './strand.js';
@@ -433,23 +433,20 @@ function initMotion() {
     };
   }
 
-  // Applications show finished prints: many fine layers that close into a solid wall.
-  const appTurns = (shape) => Math.round(SHAPES[shape].turns * (isMobile() ? 2.4 : 3.2));
+  // Applications: no printed objects. One spectrum strand redraws itself as a
+  // simple line drawing for each use, holding, then reshaping into the next.
+  const appBox = () => ({ x: A['apps-stage'].x, y: A['apps-stage'].y, s: A['apps-stage'].s * 0.6 });
+  const appIcon = (i, p) => iconForm(APPLICATIONS[i].icon, appBox(), { ry: Math.sin(p * 9 + i) * 0.18, rx: 0.08 }, N);
   function appsState(p) {
     const n = APPLICATIONS.length;
-    const box = { ...A['apps-stage'], s: A['apps-stage'].s * 1.15 };
-    const items = [];
-    APPLICATIONS.forEach((ap, i) => {
-      const d = (p * n - (i + 0.5));
-      if (d < -1.25 || d > 0.75) return;
-      const hold = 0.22;
-      const z = d < -hold ? (-d - hold) * 9 : d > hold ? -(d - hold) * 5 : 0;
-      const alpha = smooth(range(-d, 1.25, 0.6)) * (1 - smooth(range(d, 0.4, 0.72)));
-      const turns = appTurns(ap.shape);
-      const pts = objectForm(ap.shape, box, { rx: 0.42 - d * 0.12, ry: d * 0.9 + i }, turns * (isMobile() ? 40 : 52), z, turns);
-      items.push(item('app' + i, pts, rgbOf(ap.colour), { width: layerPitch(ap.shape, box.s, turns) * 1.15, alpha, matte: ap.colour === 'carbon', fogScale: 0.25 }));
-    });
-    return { items, env: env() };
+    const u = Math.min(n - 1, Math.max(0, p * n - 0.5));
+    const i = Math.min(n - 2, Math.floor(u));
+    const t = ease(range(u - i, 0.3, 0.75));
+    const pts = t <= 0 ? appIcon(i, p) : t >= 1 ? appIcon(i + 1, p) : mix(appIcon(i, p), appIcon(i + 1, p), t);
+    return {
+      items: [item('app', pts, YELLOW, { grad: SPECTRUM, gradAmt: 1, width: W0 * 1.25, r1: ease(range(p * n, 0.02, 0.4)), shadow: 0.6 })],
+      env: env(),
+    };
   }
 
   const emptyState = () => ({ items: [], env: env() });

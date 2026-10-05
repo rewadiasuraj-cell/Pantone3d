@@ -275,8 +275,8 @@ main, .foot { position: relative; z-index: 2; }
 .hero .lede { margin-bottom: 36px; max-width: 26em; }
 .hero__spool {
   position: absolute; z-index: 0;
-  right: 7vw; top: 54%;
-  width: min(34vw, 56vh); aspect-ratio: 1000 / 1205;
+  right: 9vw; top: 55%;
+  width: min(27vw, 46vh); aspect-ratio: 1000 / 1205;
   transform: translateY(-50%);
   perspective: 1200px;
 }
@@ -463,7 +463,7 @@ main, .foot { position: relative; z-index: 2; }
 .apps__head { position: absolute; top: calc(var(--nav-h) + 5vh); left: 0; display: flex; justify-content: space-between; align-items: baseline; gap: 24px; }
 .apps__head .label { color: var(--dim); }
 .apps__title { font-family: var(--display-font); font-size: clamp(22px, 1.9vw, 32px); font-weight: 750; letter-spacing: -.03em; text-transform: uppercase; text-align: right; }
-.apps__stage { position: absolute; left: 60%; top: 55%; width: 44vmin; height: 44vmin; transform: translate(-50%, -50%); }
+.apps__stage { position: absolute; left: 64%; top: 55%; width: 44vmin; height: 44vmin; transform: translate(-50%, -50%); }
 .apps__list { position: absolute; left: 0; top: 54%; transform: translateY(-50%); display: grid; gap: 2px; width: auto; }
 .apps__list li { display: grid; grid-template-columns: 34px auto; column-gap: 12px; align-items: baseline; color: var(--faint); transition: color .5s var(--ease); }
 .apps__list b { font-family: var(--display-font); font-weight: 800; font-size: clamp(24px, 2.4vw, 42px); letter-spacing: -.035em; text-transform: uppercase; line-height: 1.12; }
@@ -628,7 +628,7 @@ html.js:not(.ready) .ahero__copy { opacity: 0; }
   .hero__copy > * { max-width: none; }
   .hero .eyebrow { order: 1; }
   .hero__title { order: 2; margin: 14px 0 0; }
-  .hero__spool { order: 3; position: relative; right: auto; top: auto; transform: none; align-self: center; height: min(28svh, 72vw); width: auto; margin: 2svh 0; }
+  .hero__spool { order: 3; position: relative; right: auto; top: auto; transform: none; align-self: center; height: min(24svh, 62vw); width: auto; margin: 2svh 0; }
   .hero .lede { order: 4; margin: 0 0 20px; font-size: 15px; }
   .hero__ctas { order: 5; }
   .hero__cue { display: none; }

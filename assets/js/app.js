@@ -303,6 +303,64 @@ function mix(a, b, t, out) {
   return out;
 }
 
+/* ---------------------------------------------------------------- application icons
+ * Each icon is ONE continuous line (the filament never breaks), drawn in a
+ * [-1, 1] box. Straight runs stay straight; curves are sampled densely. */
+const arc = (cx, cy, r, a0, a1, n = 24) => Array.from({ length: n + 1 }, (_, i) => {
+  const a = (a0 + (a1 - a0) * (i / n)) * Math.PI / 180;
+  return [cx + Math.cos(a) * r, cy + Math.sin(a) * r];
+});
+const ICONS = {
+  // an isometric cube: form and fit
+  cube: () => [[-0.87, -0.5], [0, -1], [0.87, -0.5], [0, 0], [-0.87, -0.5], [-0.87, 0.5], [0, 1], [0.87, 0.5], [0.87, -0.5], [0, 0], [0, 1]],
+  // a light bulb: an idea taking shape
+  bulb: () => [[-0.24, 0.5], [-0.3, 0.18], ...arc(0, -0.28, 0.56, 125, 415, 48), [0.3, 0.18], [0.24, 0.5], [-0.24, 0.5], [-0.22, 0.66], [0.22, 0.66], [0.16, 0.82], [-0.16, 0.82]],
+  // a mortarboard: learning by making
+  cap: () => [[-1, -0.25], [0, -0.68], [1, -0.25], [0, 0.18], [-1, -0.25], [-0.58, -0.07], [-0.58, 0.38], ...Array.from({ length: 21 }, (_, i) => { const x = -0.58 + 1.16 * (i / 20); return [x, 0.38 + 0.18 * (1 - (x / 0.58) ** 2)]; }), [0.58, -0.07], [0.86, -0.2], [0.86, 0.48]],
+  // a wrench: weekend builds
+  wrench: () => [...arc(0, -0.45, 0.46, -60, 62, 18), [0.14, 0.02], [0.14, 0.82], ...arc(0, 0.82, 0.14, 0, 180, 10), [-0.14, 0.02], ...arc(0, -0.45, 0.46, 118, 240, 18), [-0.12, -0.6], [0.12, -0.6], [0.23, -0.85]],
+  // a gear: parts meant to be used
+  gear: () => {
+    const out = [];
+    for (let i = 0; i <= 240; i++) {
+      const a = (i / 240) * TAU - Math.PI / 2;
+      const r = 0.74 + 0.16 * Math.tanh(6 * Math.sin(a * 10));
+      out.push([Math.cos(a) * r, Math.sin(a) * r]);
+    }
+    out.push([0, -0.3], ...arc(0, 0, 0.3, -90, 270, 30));
+    return out;
+  },
+  // a five-petal flower: sculptural and decorative forms
+  flower: () => Array.from({ length: 301 }, (_, i) => {
+    const a = (i / 300) * Math.PI;
+    const r = 0.9 * Math.cos(5 * a);
+    return [Math.cos(a - Math.PI / 2) * r, Math.sin(a - Math.PI / 2) * r];
+  }),
+};
+
+/* Resample a 2D polyline to N points evenly by length and place it in 3D:
+ * box = {x, y, s} (s = half size), rot = {ry, rx}, z offset. */
+function iconForm(name, box, rot, N, z = 0) {
+  const pts = ICONS[name]();
+  const acc = [0];
+  for (let i = 1; i < pts.length; i++) acc.push(acc[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const total = acc[acc.length - 1] || 1;
+  const out = new Float32Array(N * 3);
+  let k = 0;
+  for (let j = 0; j < N; j++) {
+    const s = (j / (N - 1)) * total;
+    while (k < pts.length - 2 && acc[k + 1] < s) k++;
+    const f = clamp01((s - acc[k]) / (acc[k + 1] - acc[k] || 1));
+    const x = lerp(pts[k][0], pts[k + 1][0], f) * box.s, y = lerp(pts[k][1], pts[k + 1][1], f) * box.s;
+    const [px, py, pz] = rotYX(x, y, 0, rot.ry, rot.rx);
+    const o = j * 3;
+    out[o] = box.x + px * (FOCAL + z + pz) / FOCAL;
+    out[o + 1] = box.y + py * (FOCAL + z + pz) / FOCAL;
+    out[o + 2] = pz + z;
+  }
+  return out;
+}
+
 /* ---- strand.js ---- */
 /* Pantone3D — strand renderer.
  * Draws filament as a shaded cylinder on a single 2D canvas.
@@ -643,12 +701,12 @@ const MATERIALS = [
 ];
 
 const APPLICATIONS = [
-  { name: 'Prototyping',       note: 'Test form and fit before committing to production.', shape: 'hexbox',  colour: 'grey' },
-  { name: 'Product Design',    note: 'Presentation models with a considered finish.',     shape: 'lamp',    colour: 'white' },
-  { name: 'Education',         note: 'Tangible objects for learning by making.',          shape: 'gear',    colour: 'blue' },
-  { name: 'Maker Projects',    note: 'From weekend builds to ongoing projects.',          shape: 'star',    colour: 'orange' },
-  { name: 'Functional Parts',  note: 'Parts that are meant to be used, not just seen.',   shape: 'bushing', colour: 'carbon' },
-  { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', colour: 'red' },
+  { name: 'Prototyping',       note: 'Test form and fit before committing to production.', shape: 'hexbox',  icon: 'cube',   colour: 'grey' },
+  { name: 'Product Design',    note: 'Presentation models with a considered finish.',     shape: 'lamp',    icon: 'bulb',   colour: 'white' },
+  { name: 'Education',         note: 'Tangible objects for learning by making.',          shape: 'gear',    icon: 'cap',    colour: 'blue' },
+  { name: 'Maker Projects',    note: 'From weekend builds to ongoing projects.',          shape: 'star',    icon: 'wrench', colour: 'orange' },
+  { name: 'Functional Parts',  note: 'Parts that are meant to be used, not just seen.',   shape: 'bushing', icon: 'gear',   colour: 'carbon' },
+  { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', icon: 'flower', colour: 'red' },
 ];
 
 const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp`;
@@ -1162,23 +1220,20 @@ function initMotion() {
     };
   }
 
-  // Applications show finished prints: many fine layers that close into a solid wall.
-  const appTurns = (shape) => Math.round(SHAPES[shape].turns * (isMobile() ? 2.4 : 3.2));
+  // Applications: no printed objects. One spectrum strand redraws itself as a
+  // simple line drawing for each use, holding, then reshaping into the next.
+  const appBox = () => ({ x: A['apps-stage'].x, y: A['apps-stage'].y, s: A['apps-stage'].s * 0.6 });
+  const appIcon = (i, p) => iconForm(APPLICATIONS[i].icon, appBox(), { ry: Math.sin(p * 9 + i) * 0.18, rx: 0.08 }, N);
   function appsState(p) {
     const n = APPLICATIONS.length;
-    const box = { ...A['apps-stage'], s: A['apps-stage'].s * 1.15 };
-    const items = [];
-    APPLICATIONS.forEach((ap, i) => {
-      const d = (p * n - (i + 0.5));
-      if (d < -1.25 || d > 0.75) return;
-      const hold = 0.22;
-      const z = d < -hold ? (-d - hold) * 9 : d > hold ? -(d - hold) * 5 : 0;
-      const alpha = smooth(range(-d, 1.25, 0.6)) * (1 - smooth(range(d, 0.4, 0.72)));
-      const turns = appTurns(ap.shape);
-      const pts = objectForm(ap.shape, box, { rx: 0.42 - d * 0.12, ry: d * 0.9 + i }, turns * (isMobile() ? 40 : 52), z, turns);
-      items.push(item('app' + i, pts, rgbOf(ap.colour), { width: layerPitch(ap.shape, box.s, turns) * 1.15, alpha, matte: ap.colour === 'carbon', fogScale: 0.25 }));
-    });
-    return { items, env: env() };
+    const u = Math.min(n - 1, Math.max(0, p * n - 0.5));
+    const i = Math.min(n - 2, Math.floor(u));
+    const t = ease(range(u - i, 0.3, 0.75));
+    const pts = t <= 0 ? appIcon(i, p) : t >= 1 ? appIcon(i + 1, p) : mix(appIcon(i, p), appIcon(i + 1, p), t);
+    return {
+      items: [item('app', pts, YELLOW, { grad: SPECTRUM, gradAmt: 1, width: W0 * 1.25, r1: ease(range(p * n, 0.02, 0.4)), shadow: 0.6 })],
+      env: env(),
+    };
   }
 
   const emptyState = () => ({ items: [], env: env() });
