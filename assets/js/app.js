@@ -1043,7 +1043,7 @@ function initMotion() {
     const ringA = 1 - smooth(range(p, 0.04, 0.5));
     return {
       items: [
-        item('main', mix(F.hero, F.about, t), YELLOW, { r1: intro.v }),
+        item('main', mix(F.hero, F.about, t), YELLOW, { r1: intro.v, grad: SPECTRUM, gradAmt: 1 }),
         item('ringB', F.heroRingB, YELLOW, ringStyle({ r1: clamp01(intro.ring * 2), alpha: ringA })),
         item('ringF', F.heroRingF, YELLOW, ringStyle({ r1: clamp01(intro.ring * 2 - 1), alpha: ringA, front: true })),
       ],
@@ -1057,7 +1057,7 @@ function initMotion() {
     const rise = smooth(range(p, 0, 0.35));
     return {
       items: [
-        item('main', F.about, YELLOW),
+        item('main', F.about, YELLOW, { grad: SPECTRUM, gradAmt: 1 }),
         item('obj', objectForm('sculpt', { ...box, y: box.y + (1 - rise) * 0.08 }, { rx: 0.3, ry: 0.4 + p * 1.3 }, N), YELLOW,
           { grad: SCULPT, gradAmt: 1, width: layerPitch('sculpt', box.s) * 0.95, alpha: 0.35 + 0.65 * rise }),
       ],
