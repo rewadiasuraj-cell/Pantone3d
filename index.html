@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pantone3D — Engineered 3D Printing Materials</title>
+  <meta name="description" content="Premium 3D printing filaments engineered for consistent flow, dependable colour and reliable results.">
+  <meta name="theme-color" content="#080808">
+  <meta property="og:title" content="Pantone3D — Material made to perform">
+  <meta property="og:description" content="Premium 3D printing filaments engineered for consistent flow, dependable colour and reliable results.">
+  <meta property="og:image" content="assets/img/spool-yellow.webp">
+  <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="preload" as="image" href="assets/img/spool-yellow.webp" imagesrcset="assets/img/spool-yellow-sm.webp 560w, assets/img/spool-yellow.webp 1000w" imagesizes="(max-width: 760px) 80vw, 46vw" fetchpriority="high">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <script>
+    document.documentElement.classList.add('js');
+    // Safety net: never leave the page hidden if scripts fail to run.
+    setTimeout(function () { var r = document.documentElement; if (!r.classList.contains('ready')) r.classList.add('static', 'ready'); }, 4000);
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- Fixed environment: background light + the one continuous filament strand -->
+  <div class="env" aria-hidden="true">
+    <div class="env__glow"></div>
+    <div class="env__space"></div>
+    <div class="env__light"></div>
+  </div>
+  <canvas class="strand" aria-hidden="true"></canvas>
+
+  <header class="nav" data-theme="dark">
+    <a class="nav__logo" href="#top" aria-label="Pantone3D — back to top">
+      <img class="logo logo--light" src="assets/img/logo-light.png" alt="Pantone3D" width="511" height="119">
+      <img class="logo logo--dark" src="assets/img/logo-dark.png" alt="" width="511" height="119">
+    </a>
+    <nav class="nav__links" aria-label="Primary">
+      <a href="#materials">Materials</a>
+      <a href="#colour">Colour</a>
+      <a href="#process">Process</a>
+      <a href="#applications">Applications</a>
+      <a href="#range">Range</a>
+    </nav>
+    <a class="btn btn--sm btn--ghost nav__cta" href="#range"><span>Find your filament</span><i aria-hidden="true">→</i></a>
+    <button class="nav__menu" type="button" aria-expanded="false" aria-controls="menu"><span class="sr">Menu</span><i aria-hidden="true"></i></button>
+  </header>
+  <div class="menu" id="menu" hidden>
+    <nav aria-label="Mobile">
+      <a href="#materials"><small>03</small>Materials</a>
+      <a href="#colour"><small>04</small>Colour</a>
+      <a href="#process"><small>05</small>Process</a>
+      <a href="#applications"><small>07</small>Applications</a>
+      <a href="#range"><small>08</small>Range</a>
+    </nav>
+  </div>
+
+  <main id="main">
+
+    <!-- 01 — HERO ------------------------------------------------------------ -->
+    <section class="s hero" id="top" aria-labelledby="hero-title">
+      <div class="hero__spool" data-anchor="hero-spool">
+        <div class="hero__spool-inner">
+          <img src="assets/img/spool-yellow.webp" srcset="assets/img/spool-yellow-sm.webp 560w, assets/img/spool-yellow.webp 1000w" sizes="(max-width: 760px) 80vw, 46vw" width="1000" height="1213" alt="Pantone3D filament spool with yellow filament" fetchpriority="high">
+        </div>
+      </div>
+      <div class="wrap hero__copy">
+        <p class="eyebrow" data-reveal>Pantone3D <span>/</span> Engineered Materials</p>
+        <h1 class="display hero__title" id="hero-title">
+          <span class="hl">Material</span>
+          <span class="hl">Made to</span>
+          <span class="hl">Perform.</span>
+        </h1>
+        <p class="lede" data-reveal>Premium 3D printing filaments engineered for consistent flow, dependable colour and reliable results.</p>
+        <div class="ctas" data-reveal>
+          <a class="btn btn--primary" href="#materials"><span>Explore Materials</span><i aria-hidden="true">→</i></a>
+          <a class="btn btn--ghost" href="#range"><span>Find Your Filament</span></a>
+        </div>
+      </div>
+      <p class="label hero__cue" aria-hidden="true">Scroll to extrude <span>↓</span></p>
+    </section>
+
+    <!-- 02 — ONE STRAND ------------------------------------------------------- -->
+    <section class="s story" id="story" aria-labelledby="story-title">
+      <div class="wrap story__head">
+        <p class="label">02 / Material Story</p>
+        <h2 class="display display--long" id="story-title">
+          <span class="hl">One strand.</span>
+          <span class="hl hl--dim">Many possibilities.</span>
+        </h2>
+      </div>
+      <div class="story__stage" data-anchor="story-stage" aria-hidden="true"></div>
+      <ol class="story__rail label" aria-label="Forms">
+        <li>Straight strand</li><li>Coil</li><li>Wave</li><li>Layer</li><li>Printed form</li>
+      </ol>
+      <div class="wrap story__notes">
+        <div class="note"><p class="label">01 — Control</p><p class="note__t">Consistent extrusion.</p></div>
+        <div class="note"><p class="label">02 — Finish</p><p class="note__t">Clean surface behaviour.</p></div>
+        <div class="note"><p class="label">03 — Colour</p><p class="note__t">Designed for visual consistency.</p></div>
+        <div class="note"><p class="label">04 — Application</p><p class="note__t">From prototypes to finished objects.</p></div>
+      </div>
+      <canvas class="static-form" data-forms="coil,wave,layer,vase" aria-hidden="true"></canvas>
+    </section>
+
+    <!-- 03 — MATERIALS -------------------------------------------------------- -->
+    <section class="s mats" id="materials" aria-labelledby="mats-title">
+      <div class="wrap mats__top">
+        <p class="label">03 / Materials</p>
+        <h2 class="mats__title" id="mats-title">Materials for the way you make.</h2>
+      </div>
+      <div class="mats__spool">
+        <img class="mats__img is-on" src="assets/img/spool-yellow.webp" width="1000" height="1213" alt="" loading="lazy">
+        <img class="mats__img" src="assets/img/spool-yellow.webp" width="1000" height="1213" alt="" loading="lazy">
+      </div>
+      <div class="mats__sample" data-anchor="mats-sample" aria-hidden="true">
+        <p class="label mats__sample-l">Sample geometry <span>— illustrative</span></p>
+      </div>
+      <div class="wrap mats__panels">
+        <article class="mat" id="mat-pla-plus" aria-labelledby="mat-pla-plus-n">
+          <p class="label mat__i">01 / 06</p>
+          <h3 class="mat__name" id="mat-pla-plus-n">PLA+</h3>
+          <p class="mat__desc">Reliable everyday material for clean, precise printing.</p>
+          <ul class="mat__traits"><li>Smooth finish</li><li>Easy printing</li><li>Strong colour</li></ul>
+          <p class="mat__best"><span class="label">Best for</span> Everyday prints · Prototypes · Display models</p>
+          <a class="link" href="#range">Explore material <i aria-hidden="true">→</i></a>
+        </article>
+        <article class="mat" id="mat-matte-pla" aria-labelledby="mat-matte-pla-n">
+          <p class="label mat__i">02 / 06</p>
+          <h3 class="mat__name" id="mat-matte-pla-n">Matte PLA</h3>
+          <p class="mat__desc">A low-sheen surface that softens the look of layer lines.</p>
+          <ul class="mat__traits"><li>Matte surface</li><li>Soft appearance</li><li>Easy printing</li></ul>
+          <p class="mat__best"><span class="label">Best for</span> Design models · Presentation pieces · Décor</p>
+          <a class="link" href="#range">Explore material <i aria-hidden="true">→</i></a>
+        </article>
+        <article class="mat" id="mat-petg" aria-labelledby="mat-petg-n">
+          <p class="label mat__i">03 / 06</p>
+          <h3 class="mat__name" id="mat-petg-n">PETG</h3>
+          <p class="mat__desc">A durable all-rounder for parts that have to work as well as look right.</p>
+          <ul class="mat__traits"><li>Durable</li><li>Functional</li><li>Versatile</li></ul>
+          <p class="mat__best"><span class="label">Best for</span> Functional parts · Enclosures · Everyday utility</p>
+          <a class="link" href="#range">Explore material <i aria-hidden="true">→</i></a>
+        </article>
+        <article class="mat" id="mat-abs" aria-labelledby="mat-abs-n">
+          <p class="label mat__i">04 / 06</p>
+          <h3 class="mat__name" id="mat-abs-n">ABS</h3>
+          <p class="mat__desc">A long-established engineering material for sturdy, finishable parts.</p>
+          <ul class="mat__traits"><li>Sturdy parts</li><li>Workable finish</li><li>Engineering use</li></ul>
+          <p class="mat__best"><span class="label">Best for</span> Housings · Jigs and fixtures · Finished parts</p>
+          <a class="link" href="#range">Explore material <i aria-hidden="true">→</i></a>
+        </article>
+        <article class="mat" id="mat-nylon" aria-labelledby="mat-nylon-n">
+          <p class="label mat__i">05 / 06</p>
+          <h3 class="mat__name" id="mat-nylon-n">Nylon</h3>
+          <p class="mat__desc">A tough, resilient material for demanding mechanical parts.</p>
+          <ul class="mat__traits"><li>Tough</li><li>Resilient</li><li>Mechanical use</li></ul>
+          <p class="mat__best"><span class="label">Best for</span> Gears · Hinges · Wear parts</p>
+          <a class="link" href="#range">Explore material <i aria-hidden="true">→</i></a>
+        </article>
+        <article class="mat" id="mat-carbon-fiber" aria-labelledby="mat-carbon-fiber-n">
+          <p class="label mat__i">06 / 06</p>
+          <h3 class="mat__name" id="mat-carbon-fiber-n">Carbon Fiber</h3>
+          <p class="mat__desc">A fibre-filled material for rigid parts with a technical, matte finish.</p>
+          <ul class="mat__traits"><li>Rigid parts</li><li>Technical finish</li><li>Matte texture</li></ul>
+          <p class="mat__best"><span class="label">Best for</span> Brackets · RC and drone parts · Tooling</p>
+          <a class="link" href="#range">Explore material <i aria-hidden="true">→</i></a>
+        </article>
+      </div>
+      <div class="wrap mats__tabs" role="tablist" aria-label="Choose a material">
+        <button role="tab" type="button" aria-controls="mat-pla-plus" aria-selected="true">PLA+</button>
+        <button role="tab" type="button" aria-controls="mat-matte-pla" aria-selected="false" tabindex="-1">Matte PLA</button>
+        <button role="tab" type="button" aria-controls="mat-petg" aria-selected="false" tabindex="-1">PETG</button>
+        <button role="tab" type="button" aria-controls="mat-abs" aria-selected="false" tabindex="-1">ABS</button>
+        <button role="tab" type="button" aria-controls="mat-nylon" aria-selected="false" tabindex="-1">Nylon</button>
+        <button role="tab" type="button" aria-controls="mat-carbon-fiber" aria-selected="false" tabindex="-1">Carbon Fiber</button>
+        <span class="mats__bar" aria-hidden="true"><i></i></span>
+      </div>
+    </section>
+
+    <!-- 04 — COLOUR ---------------------------------------------------------- -->
+    <section class="s colour" id="colour" aria-labelledby="colour-title">
+      <div class="wrap colour__head">
+        <p class="label">04 / Colour</p>
+        <h2 class="display" id="colour-title">
+          <span class="hl">Colour is</span>
+          <span class="hl">part of the</span>
+          <span class="hl">material.</span>
+        </h2>
+      </div>
+      <div class="colour__line" data-anchor="colour-line" aria-hidden="true"></div>
+      <figure class="colour__spool">
+        <img class="colour__img" src="assets/img/spool-black.webp" width="1000" height="1213" alt="Pantone3D PLA+ spool in Black" loading="lazy">
+      </figure>
+      <div class="colour__sample" data-anchor="colour-sample" aria-hidden="true"></div>
+      <div class="wrap colour__meta">
+        <p class="label">PLA+ <span class="colour__count">01 / 08</span></p>
+        <p class="colour__name" aria-live="polite">Black</p>
+        <p class="label colour__sample-l">Sample print — illustrative</p>
+      </div>
+      <div class="wrap colour__pick">
+        <p class="label" id="colour-pick-l">Select colour</p>
+        <div class="swatches" role="radiogroup" aria-labelledby="colour-pick-l"></div>
+      </div>
+    </section>
+
+    <!-- 05 — FILAMENT TO FORM ------------------------------------------------- -->
+    <section class="s build" id="process" aria-labelledby="build-title">
+      <div class="wrap build__head">
+        <p class="label">05 / Process</p>
+        <h2 class="display" id="build-title">
+          <span class="hl">From filament</span>
+          <span class="hl">to form.</span>
+        </h2>
+        <p class="lede">Materials engineered for the journey between an idea and the finished print.</p>
+      </div>
+      <div class="build__stage" data-anchor="build-stage" aria-hidden="true">
+        <svg class="build__frame" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="M0 8V0h8M92 0h8v8M100 92v8h-8M8 100H0v-8" />
+          <line class="build__plate" x1="6" x2="94" y1="86" y2="86" />
+        </svg>
+        <span class="build__z label">Z <b>000</b></span>
+      </div>
+      <div class="nozzle" aria-hidden="true"><svg viewBox="0 0 40 56"><path d="M8 0h24v30l-8 14h-8L8 30z"/><path class="nozzle__tip" d="M17 44h6l-1 6h-4z"/></svg></div>
+      <ol class="wrap build__steps">
+        <li><span class="label">01</span> Material</li>
+        <li><span class="label">02</span> Extrusion</li>
+        <li><span class="label">03</span> Layers</li>
+        <li><span class="label">04</span> Object</li>
+      </ol>
+      <canvas class="static-form" data-forms="vase" aria-hidden="true"></canvas>
+    </section>
+
+    <!-- 06 — CONSISTENCY ----------------------------------------------------- -->
+    <section class="s proof" id="consistency" aria-labelledby="proof-title">
+      <div class="wrap">
+        <div class="bento">
+          <div class="tile tile--head">
+            <p class="label">06 / Consistency</p>
+            <h2 class="display" id="proof-title"><span class="hl">Consistency</span> <span class="hl">is the</span> <span class="hl">product.</span></h2>
+          </div>
+          <article class="tile tile--dim">
+            <svg class="dia" viewBox="0 0 320 220" aria-hidden="true">
+              <g class="dia__strands"><rect x="0" y="40" width="320" height="22" rx="11"/><rect x="0" y="99" width="320" height="22" rx="11"/><rect x="0" y="158" width="320" height="22" rx="11"/></g>
+              <g class="dia__gauge"><line x1="40" y1="24" x2="40" y2="196"/><line x1="280" y1="24" x2="280" y2="196"/><path d="M30 40h20M30 62h20M270 40h20M270 62h20M30 99h20M30 121h20M270 99h20M270 121h20M30 158h20M30 180h20M270 158h20M270 180h20"/></g>
+            </svg>
+            <div class="tile__txt"><p class="label">01</p><h3>Dimensional control</h3><p>Consistent filament behaviour.</p></div>
+          </article>
+          <article class="tile tile--wind">
+            <div class="macro"><img src="assets/img/spool-yellow.webp" width="1000" height="1213" alt="Close-up of evenly wound yellow filament on a Pantone3D spool" loading="lazy"></div>
+            <div class="tile__txt"><p class="label">02</p><h3>Reliable winding</h3><p>Clean feeding from spool to machine.</p></div>
+          </article>
+          <article class="tile tile--col">
+            <div class="batch" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="tile__txt"><p class="label">03</p><h3>Colour consistency</h3><p>Designed for repeatable visual results.</p></div>
+          </article>
+          <article class="tile tile--choice">
+            <ul class="choice" aria-label="Materials">
+              <li>PLA+</li><li>Matte PLA</li><li>PETG</li><li>ABS</li><li>Nylon</li><li>Carbon Fiber</li>
+            </ul>
+            <div class="tile__txt"><p class="label">04</p><h3>Material choice</h3><p>Options for different printing requirements.</p></div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 — APPLICATIONS ---------------------------------------------------- -->
+    <section class="s apps" id="applications" aria-labelledby="apps-title">
+      <div class="wrap apps__head">
+        <p class="label">07 / Applications</p>
+        <h2 class="apps__title" id="apps-title">Built for what comes next.</h2>
+      </div>
+      <div class="apps__stage" data-anchor="apps-stage" aria-hidden="true"></div>
+      <ol class="wrap apps__list">
+        <li><span class="label">01</span><b>Prototyping</b><em>Test form and fit before committing to production.</em></li>
+        <li><span class="label">02</span><b>Product Design</b><em>Presentation models with a considered finish.</em></li>
+        <li><span class="label">03</span><b>Maker Projects</b><em>From weekend builds to ongoing projects.</em></li>
+        <li><span class="label">04</span><b>Education</b><em>Tangible objects for learning by making.</em></li>
+        <li><span class="label">05</span><b>Functional Parts</b><em>Parts that are meant to be used, not just seen.</em></li>
+        <li><span class="label">06</span><b>Creative Printing</b><em>Sculptural forms, décor and experiments.</em></li>
+      </ol>
+      <p class="apps__big" aria-hidden="true"></p>
+    </section>
+
+    <!-- 08 — RANGE ----------------------------------------------------------- -->
+    <section class="s range" id="range" aria-labelledby="range-title">
+      <div class="wrap">
+        <div class="range__head">
+          <p class="label">08 / The Range</p>
+          <h2 class="display" id="range-title"><span class="hl">Explore</span> <span class="hl">the range.</span></h2>
+          <p class="label verify">[VERIFY] Materials and colours to be confirmed against the current Pantone3D catalogue.</p>
+        </div>
+        <div class="grid" data-range></div>
+      </div>
+    </section>
+
+    <!-- 09 — FINAL ----------------------------------------------------------- -->
+    <section class="s final" id="final" aria-labelledby="final-title">
+      <div class="final__spool"><img src="assets/img/spool-yellow.webp" width="1000" height="1213" alt="" loading="lazy"></div>
+      <svg class="final__strand" aria-hidden="true" preserveAspectRatio="none"><path class="fs-base"/><path class="fs-body"/><path class="fs-hl"/></svg>
+      <div class="wrap final__copy">
+        <h2 class="display" id="final-title">
+          <span class="hl">Your next idea</span>
+          <span class="hl">starts with</span>
+          <span class="hl final__last">the material.</span>
+        </h2>
+        <div class="ctas">
+          <a class="btn btn--primary" href="#range"><span>Explore Pantone3D Materials</span><i aria-hidden="true">→</i></a>
+          <a class="btn btn--ghost" href="#contact"><span>Talk to Our Team</span></a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot" id="contact">
+    <div class="wrap foot__in">
+      <img class="foot__logo" src="assets/img/logo-light.png" width="511" height="119" alt="Pantone3D" loading="lazy">
+      <div class="foot__col">
+        <p class="label">Contact</p>
+        <a href="mailto:hello@example.com" class="verify-inline">hello@example.com <small>[VERIFY]</small></a>
+        <p class="verify-inline">Phone number <small>[VERIFY]</small></p>
+        <p class="verify-inline">Company address <small>[VERIFY]</small></p>
+      </div>
+      <div class="foot__col">
+        <p class="label">Follow</p>
+        <a href="#" class="verify-inline">Instagram <small>[VERIFY]</small></a>
+        <a href="#" class="verify-inline">LinkedIn <small>[VERIFY]</small></a>
+        <a href="#" class="verify-inline">YouTube <small>[VERIFY]</small></a>
+      </div>
+      <div class="foot__col">
+        <p class="label">Legal</p>
+        <a href="#">Privacy policy</a>
+        <a href="#">Terms</a>
+        <a href="#">Cookies</a>
+      </div>
+      <p class="label foot__c">© <span data-year>2026</span> Pantone3D</p>
+    </div>
+  </footer>
+
+  <script src="assets/vendor/gsap.min.js" defer></script>
+  <script src="assets/vendor/ScrollTrigger.min.js" defer></script>
+  <script src="assets/vendor/SplitText.min.js" defer></script>
+  <script src="assets/vendor/lenis.min.js" defer></script>
+  <script src="assets/js/app.js" defer></script>
+</body>
+</html>
