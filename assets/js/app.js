@@ -801,7 +801,7 @@ MATERIALS.forEach((m, i) => {
   el.className = 'card';
   el.innerHTML = `
     <div class="card__tex"><img src="${texSrc(m.colour)}" width="960" height="260" loading="lazy" alt="Close-up of ${m.name} filament in ${COLOURS[m.colour].name}"></div>
-    <canvas class="card__obj" data-shape="${m.shape}" data-colour="${m.colour}" data-matte="${m.matte ? 1 : 0}" aria-hidden="true"></canvas>
+    <img class="card__obj" src="${spoolSrc(m.colour, true)}" width="560" height="679" loading="lazy" alt="" aria-hidden="true">
     <div class="card__body">
       <p class="card__top label"><span>Material ${String(i + 1).padStart(2, '0')}</span></p>
       <h3>${m.name}</h3>
@@ -817,20 +817,6 @@ MATERIALS.forEach((m, i) => {
     </div>`;
   rangeGrid.appendChild(el);
 });
-
-// Small printed samples that sit over each card's texture strip.
-function renderCardObjects() {
-  $$('.card__obj').forEach((cv) => {
-    if (!cv.clientWidth) return;
-    const r = new StrandRenderer(cv, { chunk: 4 });
-    r.resize(cv.clientWidth, cv.clientHeight);
-    const s = 1.5;
-    const pts = objectForm(cv.dataset.shape, { x: 0, y: 0.06, s }, { rx: 0.42, ry: 0.5 }, 620);
-    r.render([{ id: 'o', pts, color: rgbOf(cv.dataset.colour), alpha: 1, width: layerPitch(cv.dataset.shape, s) * 0.95, matte: cv.dataset.matte === '1', fogScale: 0.4 }], [17, 17, 19]);
-  });
-}
-(window.requestIdleCallback || setTimeout)(renderCardObjects);
-let cardT; addEventListener('resize', () => { clearTimeout(cardT); cardT = setTimeout(renderCardObjects, 250); });
 
 /* ==========================================================================
    Shared UI state: material + colour selection
