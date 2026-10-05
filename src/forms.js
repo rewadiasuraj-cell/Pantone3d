@@ -116,6 +116,57 @@ export function heroForm(L, spool, N) {
   return path([{ fn: catmull(ctrl), w: 1 }], N);
 }
 
+/* Half of a tilted orbit ring around a product (the hero / materials spool).
+ * half = 'back' (passes behind, top) or 'front' (passes in front, bottom).
+ * o = {x, y, rx, ry, roll} in world units: rx/ry are the on-screen radii. */
+export function ringForm(o, half, N) {
+  const a0 = half === 'back' ? 0 : Math.PI;
+  const depth = o.depth ?? o.rx * 0.6;
+  const cr = Math.cos(o.roll || 0), sr = Math.sin(o.roll || 0);
+  const fn = (t) => {
+    const a = a0 + t * Math.PI;
+    const x = -Math.cos(a) * o.rx, y = -Math.sin(a) * o.ry;
+    return at(o.x + x * cr - y * sr, o.y + x * sr + y * cr, Math.sin(a) * depth);
+  };
+  return path([{ fn, w: 1 }], N);
+}
+
+/* About block: the strand crosses behind the printed object, then leads down. */
+export function aboutForm(L, box, N) {
+  const { ax, ay } = L;
+  const ctrl = [
+    at(-ax - 0.4, box.y - box.s * 0.25, 0.3),
+    at(lerp(-ax, box.x, 0.45), box.y - box.s * 0.55, 0.6),
+    at(box.x - box.s * 0.35, box.y - box.s * 0.18, 1.6),
+    at(box.x + box.s * 0.3, box.y + box.s * 0.05, 1.9),
+    at(box.x + box.s * 0.62, box.y + box.s * 0.38, 0.9),
+    at(box.x + box.s * 0.2, ay + 0.4, 0.2),
+  ];
+  return path([{ fn: catmull(ctrl), w: 1 }], N);
+}
+
+/* Colour section: a ribbon of parallel strands that enters from the upper
+ * left, sweeps across the top of the section and opens out to the right.
+ * k = strand index offset from the ribbon centre (…, -1, 0, 1, …). */
+export function waveRibbon(L, k, gap, N, ctrl) {
+  const { ax, ay } = L;
+  const base = catmull(ctrl || [
+    at(-ax - 0.5, -ay * 0.92, 0.3),
+    at(-ax * 0.45, -ay * 0.86, 0.25),
+    at(ax * 0.1, -ay * 0.62, 0.05),
+    at(ax * 0.55, -ay * 0.2, -0.05),
+    at(ax + 0.6, -ay * 0.38, 0),
+  ]);
+  const fn = (t) => {
+    const p = base(t);
+    const fan = 0.45 + 1.1 * t;
+    const tw = 0.4 + t * 1.6;
+    const off = k * gap * fan;
+    return [p[0] - off * 0.18, p[1] + off * Math.cos(tw), p[2] + off * Math.sin(tw) * 1.2];
+  };
+  return path([{ fn, w: 1 }], N);
+}
+
 export function straightForm(L, cy, N) {
   const a = at(-L.ax - 0.4, cy + 0.04, 0.35), b = at(L.ax + 0.4, cy - 0.04, -0.15);
   return path([{ fn: line(a, b), w: 1 }], N);
@@ -212,6 +263,7 @@ export const SHAPES = {
   star:     { turns: 24, h: 1.2, prof: (v) => 0.36 + 0.05 * Math.sin(Math.PI * v), n: 5, round: 0.35, twist: 1.4 },
   bushing:  { turns: 20, h: 1.0, prof: (v) => (v < 0.22 ? 0.42 : 0.26) },
   organic:  { turns: 24, h: 1.15, prof: (v) => 0.3 + 0.08 * Math.sin(Math.PI * v), wobble: 1 },
+  sculpt:   { turns: 30, h: 1.3, prof: (v) => 0.22 + 0.2 * Math.sin(Math.PI * (0.12 + v * 0.8)) ** 1.4 - 0.05 * v, n: 12, round: 0.55, twist: 2.2 },
 };
 
 /* box = {x, y, s}; s scales the object; rot = {rx, ry}; z adds depth. */
