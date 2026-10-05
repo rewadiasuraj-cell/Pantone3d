@@ -90,27 +90,25 @@ export function heroForm(L, spool, N) {
   const { ax, ay } = L;
   const sx = spool.x, sy = spool.y, r = spool.r;
   const portrait = ax < ay;
+  // One unbroken strand: it sweeps in under the spool, rises round its left
+  // side and slips behind the flange into the winding. No loops, no crossings.
   const ctrl = portrait
     ? [
-        at(ax + 0.4, sy + r * 0.85, -0.2),
-        at(sx + r * 0.2, sy + r * 1.0, -0.3),
-        at(sx - r * 0.7, sy + r * 0.95, -0.1),
-        at(sx - r * 1.15, sy + r * 0.5, 0.4),
-        at(sx - r * 1.0, sy + r * 0.05, 0.9),
-        at(sx - r * 0.72, sy + r * 0.42, 0.6),
-        at(sx - r * 0.5, sy + r * 0.15, 1.2),
-        at(sx, sy, 1.6),
+        at(ax + 0.4, sy + r * 0.95, -0.2),
+        at(sx + r * 0.1, sy + r * 1.2, -0.2),
+        at(sx - r * 0.85, sy + r * 0.95, 0),
+        at(sx - r * 1.2, sy + r * 0.2, 0.5),
+        at(sx - r * 0.85, sy - r * 0.45, 1.1),
+        at(sx - r * 0.25, sy - r * 0.3, 1.5),
+        at(sx, sy, 1.7),
       ]
     : [
-        at(ax + 0.45, ay * 0.78, -0.3),
-        at(ax * 0.62, ay * 0.82, -0.25),
-        at(sx - r * 0.2, ay * 0.78, -0.2),
-        at(sx - r * 1.05, ay * 0.62, 0.15),
-        at(sx - r * 1.35, ay * 0.3, 0.7),
-        at(sx - r * 1.05, ay * 0.12, 1.0),
-        at(sx - r * 0.85, ay * 0.42, 0.6),
-        at(sx - r * 0.95, sy + r * 0.2, 1.2),
-        at(sx - r * 0.45, sy + r * 0.05, 1.5),
+        at(ax + 0.45, ay * 0.82, -0.3),
+        at(sx + r * 0.2, sy + r * 1.3, -0.25),
+        at(sx - r * 0.9, sy + r * 1.05, -0.05),
+        at(sx - r * 1.35, sy + r * 0.25, 0.5),
+        at(sx - r * 1.05, sy - r * 0.55, 1.1),
+        at(sx - r * 0.35, sy - r * 0.4, 1.5),
         at(sx, sy, 1.7),
       ];
   return path([{ fn: catmull(ctrl), w: 1 }], N);
@@ -131,16 +129,19 @@ export function ringForm(o, half, N) {
   return path([{ fn, w: 1 }], N);
 }
 
-/* About block: the strand crosses behind the printed object, then leads down. */
-export function aboutForm(L, box, N) {
+/* About block: the strand runs in low from the left, under the copy, climbs the
+ * side of the printed object and finishes as its top layer (`end`, world xyz). */
+export function aboutForm(L, box, N, end) {
   const { ax, ay } = L;
+  const k = box.s;
+  const lead = ax < ay
+    ? [at(-ax - 0.4, box.y + k * 0.3, 0.2), at(box.x - k * 0.62, box.y + k * 0.12, 0.3)]
+    : [at(-ax - 0.4, ay * 0.86, 0.2), at(lerp(-ax, box.x, 0.5), ay * 0.74, 0.3), at(box.x - k * 0.62, box.y + k * 0.42, 0.4)];
   const ctrl = [
-    at(-ax - 0.4, box.y - box.s * 0.25, 0.3),
-    at(lerp(-ax, box.x, 0.45), box.y - box.s * 0.55, 0.6),
-    at(box.x - box.s * 0.35, box.y - box.s * 0.18, 1.6),
-    at(box.x + box.s * 0.3, box.y + box.s * 0.05, 1.9),
-    at(box.x + box.s * 0.62, box.y + box.s * 0.38, 0.9),
-    at(box.x + box.s * 0.2, ay + 0.4, 0.2),
+    ...lead,
+    at(box.x - k * 0.58, box.y - k * 0.2, 0.3),
+    at(lerp(box.x - k * 0.5, end[0], 0.5), end[1] - k * 0.16, end[2] * 0.6),
+    end,
   ];
   return path([{ fn: catmull(ctrl), w: 1 }], N);
 }

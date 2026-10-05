@@ -64,7 +64,7 @@
     <section class="s hero" id="top" aria-labelledby="hero-title">
       <div class="hero__spool" data-anchor="hero-spool">
         <div class="hero__spool-inner">
-          <img src="assets/img/spool-spectrum.webp" srcset="assets/img/spool-spectrum-sm.webp 560w, assets/img/spool-spectrum.webp 1000w" sizes="(max-width: 760px) 86vw, 56vw" width="1000" height="1213" alt="Pantone3D filament spool wound with spectrum-coloured filament" fetchpriority="high">
+          <img src="assets/img/spool-spectrum.webp" srcset="assets/img/spool-spectrum-sm.webp 560w, assets/img/spool-spectrum.webp 1000w" sizes="(max-width: 760px) 86vw, 56vw" width="1000" height="1205" alt="Pantone3D filament spool wound with spectrum-coloured filament" fetchpriority="high">
         </div>
       </div>
       <div class="wrap hero__copy">
@@ -147,8 +147,8 @@
         <p class="lede">A focused range of 3D printing materials for smooth flow, a dependable finish and real-world use.</p>
       </div>
       <div class="mats__spool" data-anchor="mats-spool">
-        <img class="mats__img is-on" src="assets/img/spool-yellow.webp" srcset="assets/img/spool-yellow-sm.webp 560w, assets/img/spool-yellow.webp 1000w" sizes="(max-width: 760px) 70vw, 36vw" width="1000" height="1213" alt="" loading="lazy">
-        <img class="mats__img" src="assets/img/spool-yellow.webp" width="1000" height="1213" alt="" loading="lazy">
+        <img class="mats__img is-on" src="assets/img/spool-yellow.webp" srcset="assets/img/spool-yellow-sm.webp 560w, assets/img/spool-yellow.webp 1000w" sizes="(max-width: 760px) 70vw, 36vw" width="1000" height="1205" alt="" loading="lazy">
+        <img class="mats__img" src="assets/img/spool-yellow.webp" width="1000" height="1205" alt="" loading="lazy">
       </div>
       <div class="mats__panel">
         <article class="mat" id="mat-pla-plus" aria-labelledby="mat-pla-plus-n">
@@ -224,18 +224,21 @@
         <p class="lede">Materials engineered for the journey between an idea and the finished print.</p>
       </div>
       <div class="build__stage" data-anchor="build-stage" aria-hidden="true">
-        <svg class="build__frame" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <path d="M0 8V0h8M92 0h8v8M100 92v8h-8M8 100H0v-8" />
-          <line class="build__plate" x1="6" x2="94" y1="86" y2="86" />
-        </svg>
-        <span class="build__z label">Z <b>000</b></span>
+        <span class="build__z label">Layer <b>000</b></span>
       </div>
-      <div class="nozzle" aria-hidden="true"><svg viewBox="0 0 40 56"><path d="M8 0h24v30l-8 14h-8L8 30z"/><path class="nozzle__tip" d="M17 44h6l-1 6h-4z"/></svg></div>
+      <div class="build__bed" aria-hidden="true"></div>
+      <div class="nozzle" aria-hidden="true"><svg viewBox="0 0 60 100">
+        <defs><linearGradient id="nzBrass" x1="0" x2="1"><stop offset="0" stop-color="#8a6a22"/><stop offset=".45" stop-color="#e6c25a"/><stop offset="1" stop-color="#7a5a1a"/></linearGradient></defs>
+        <g class="nozzle__sink"><rect x="10" y="0" width="40" height="6" rx="1.5"/><rect x="10" y="10" width="40" height="6" rx="1.5"/><rect x="10" y="20" width="40" height="6" rx="1.5"/><rect x="10" y="30" width="40" height="6" rx="1.5"/><rect x="26" y="0" width="8" height="52"/></g>
+        <rect class="nozzle__block" x="6" y="52" width="48" height="24" rx="3"/>
+        <rect class="nozzle__heat" x="10" y="70" width="40" height="2" rx="1"/>
+        <path class="nozzle__tip" d="M21 76h18l-6 18h-6z"/>
+      </svg></div>
       <ol class="wrap build__steps">
-        <li><span class="label">01</span> Filament</li>
-        <li><span class="label">02</span> Extrusion</li>
-        <li><span class="label">03</span> Layers</li>
-        <li><span class="label">04</span> Object</li>
+        <li><span class="label">01</span><span class="build__step"><b>Filament</b><small>Fed from the spool into the printer.</small></span></li>
+        <li><span class="label">02</span><span class="build__step"><b>Extrusion</b><small>Melted in the hot end and pushed through the nozzle.</small></span></li>
+        <li><span class="label">03</span><span class="build__step"><b>Layers</b><small>Laid down one thin layer at a time.</small></span></li>
+        <li><span class="label">04</span><span class="build__step"><b>Object</b><small>Layer on layer, it becomes a finished part.</small></span></li>
       </ol>
       <canvas class="static-form" data-forms="vase" aria-hidden="true"></canvas>
     </section>

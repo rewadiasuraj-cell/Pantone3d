@@ -55,6 +55,17 @@ def cutout(img):
             ny, nx = y + dy, x + dx
             if 0 <= ny < h and 0 <= nx < w and light[ny, nx] and not bg[ny, nx]:
                 bg[ny, nx] = True; q.append((ny, nx))
+    # the grey floor shadow under the spool: grow the background into darker,
+    # still neutral pixels, but only across the bottom of the frame
+    floor = (mx > 0.23) & (sat < 0.12)
+    floor[: int(h * 0.82)] = False
+    q = deque(zip(*np.nonzero(bg & np.pad(np.ones((h - int(h * 0.82), w), bool), ((int(h * 0.82), 0), (0, 0))))))
+    while q:
+        y, x = q.popleft()
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            ny, nx = y + dy, x + dx
+            if 0 <= ny < h and 0 <= nx < w and floor[ny, nx] and not bg[ny, nx]:
+                bg[ny, nx] = True; q.append((ny, nx))
     # enclosed studio-white seen through the spool windows
     bg |= (mx > 0.82) & (sat < 0.08)
     m = Image.fromarray(((~bg) * 255).astype(np.uint8))
