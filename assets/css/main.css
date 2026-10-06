@@ -669,7 +669,7 @@ html.js:not(.ready) .ahero__copy { opacity: 0; }
   .about__aside { display: none; }
   .about .link { display: none; }
 
-  .story__stage { left: 50%; top: 58%; width: 56vw; height: 56vw; }
+  .story__stage { left: 50%; top: 56%; width: min(52vw, 26svh); height: min(52vw, 26svh); }
   .story__rail { display: none; }
   .story__head .display { font-size: clamp(38px, 10.6vw, 80px); }
   .note { width: calc(100vw - 2 * var(--pad)); }
@@ -745,8 +745,39 @@ html.js:not(.ready) .ahero__copy { opacity: 0; }
   .values svg { width: 52px; height: 52px; margin-bottom: 20px; }
 }
 
-@media (max-width: 900px) and (orientation: portrait) and (max-height: 740px), (max-width: 640px) and (max-height: 740px) {
-  .mats__spool { display: none; }
+/* Phones: the pinned Materials, Colour and Applications screens stack in normal
+   flow, so nothing can overlap however short the visible screen is (in-app
+   browsers with toolbars leave as little as ~600px). */
+@media (max-width: 900px) and (orientation: portrait), (max-width: 640px) {
+  .mats { display: flex; flex-direction: column; height: 100svh; padding: calc(var(--nav-h) + 2svh) 0 14px; }
+  .mats__head, .mats__spool, .mats__panel, .mats__tabs { position: relative; inset: auto; }
+  .mats__head { flex: none; }
+  .mats__spool { flex: 1 1 0; min-height: 0; width: 100%; aspect-ratio: auto; transform: none; margin: 8px 0; }
+  .mats__panel { flex: none; margin: 0 var(--pad) 12px; width: auto; height: auto; min-height: 0; display: grid; }
+  .mat { position: relative; inset: auto; grid-area: 1 / 1; padding: 22px 22px 20px; }
+  .mats__tabs { flex: none; left: auto; right: auto; bottom: auto; padding-inline: var(--pad); width: 100%; }
+  .tab { min-height: 60px; width: auto; min-width: 150px; padding: 8px 16px 8px 8px; }
+  .tab small { display: none; }
+  .tab img { width: 40px; }
+
+  .colour { display: flex; flex-direction: column; justify-content: flex-end; height: 100svh; padding-bottom: 20px; }
+  .colour__head, .colour__pick { position: relative; inset: auto; flex: none; }
+  .colour__head .lede { margin: 12px 0 18px; }
+  .colour__pick { margin-top: 22px; }
+
+  .apps { display: flex; flex-direction: column; height: 100svh; padding: calc(var(--nav-h) + 2svh) 0 20px; }
+  .apps__head, .apps__stage, .apps__list { position: relative; inset: auto; transform: none; }
+  .apps__head { flex: none; }
+  .apps__stage { flex: 1 1 0; min-height: 0; width: min(64vw, 32svh); height: auto; margin: 12px 0; align-self: center; }
+  .apps__list { flex: none; min-height: 150px; align-content: start; }
+}
+
+/* Short phone screens: drop the extras so the essentials fit. */
+@media (max-width: 900px) and (orientation: portrait) and (max-height: 700px), (max-width: 640px) and (max-height: 700px) {
+  .mat .pills { display: none; }
+  .mat__desc { margin-bottom: 14px; }
+  .colour__head .lede { display: none; }
+  .colour__head .btn { margin-top: 16px; }
 }
 
 @media (max-width: 400px) {
