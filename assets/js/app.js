@@ -1555,45 +1555,96 @@ function initMotion() {
   // data-saving phones. Scroll turns it, rolls it on its axle and, in
   // Materials, rewinds it in the selected material's colour.
   const matsStage = $('.mats__spool');
+  const viewerStage = $('[data-viewer]');
   const spoolPose = { x: 0, y: 0, tx: 0, ty: 0, rgb: [...YELLOW], matte: 0, t: 0 };
   let spool3d = null, spoolHost = null;
   function sizeSpool() {
     if (!spool3d || !spoolHost) return;
+    if (spoolHost === 'viewer') {
+      // The panel canvas fills its box; the spool stays clear of the edges at any angle.
+      const bw = viewerStage.offsetWidth, bh = viewerStage.offsetHeight;
+      spool3d.size(bw, bh, Math.min(bw, bh) * 0.7);
+      return;
+    }
     const el = spoolHost === 'mats' ? matsStage : travel;
     // offsetWidth/Height ignore the intro scale tweens, which the canvas inherits anyway.
     const bw = el.offsetWidth, bh = el.offsetHeight;
     spool3d.size(bw * 1.4, bh * 1.3, bh * 1.03);
   }
+  const hostEl = { mats: matsStage, viewer: viewerStage, travel };
   function hostSpool(where) {
     if (where === spoolHost) return;
     spoolHost = where;
-    (where === 'mats' ? matsStage : travel).appendChild(spool3d.canvas);
+    hostEl[where].appendChild(spool3d.canvas);
     sizeSpool();
   }
+
+  // Up Close panel: drag (mouse or touch) turns the spool on both axes, with a
+  // little momentum; hovering tilts it towards the pointer; left alone it turns slowly.
+  const drag = { ry: -0.6, rx: 0.12, vy: 0, vx: 0, hx: 0, hy: 0, on: false, px: 0, py: 0, idleAt: 0 };
+  if (viewerStage) {
+    viewerStage.addEventListener('pointerdown', (e) => {
+      drag.on = true; drag.px = e.clientX; drag.py = e.clientY; drag.vx = drag.vy = 0;
+      viewerStage.setPointerCapture(e.pointerId); viewerStage.classList.add('is-dragging');
+    });
+    viewerStage.addEventListener('pointermove', (e) => {
+      const r = viewerStage.getBoundingClientRect();
+      drag.hx = (e.clientX - r.left) / r.width - 0.5; drag.hy = (e.clientY - r.top) / r.height - 0.5;
+      if (!drag.on) return;
+      const dx = e.clientX - drag.px, dy = e.clientY - drag.py;
+      drag.px = e.clientX; drag.py = e.clientY;
+      drag.vy = dx * 0.012; drag.vx = dy * 0.012;
+      drag.ry += drag.vy; drag.rx = Math.max(-1.3, Math.min(1.3, drag.rx + drag.vx));
+    });
+    const end = () => { drag.on = false; drag.idleAt = performance.now() / 1000; viewerStage.classList.remove('is-dragging'); };
+    viewerStage.addEventListener('pointerup', end);
+    viewerStage.addEventListener('pointercancel', end);
+    viewerStage.addEventListener('pointerleave', () => { if (!drag.on) { drag.hx = 0; drag.hy = 0; } });
+  }
+  function viewerPose(time, k) {
+    if (!drag.on) {
+      // Momentum, then a slow turn once the hand has been away for a moment.
+      drag.vy *= 0.92; drag.vx *= 0.92;
+      drag.ry += drag.vy; drag.rx = Math.max(-1.3, Math.min(1.3, drag.rx + drag.vx));
+      if (time - drag.idleAt > 1.5 && Math.abs(drag.vy) < 0.002) drag.ry += 0.0045;
+      drag.rx = lerp(drag.rx, 0.12, 0.004);
+    }
+    spoolPose.x = lerp(spoolPose.x, drag.on ? 0 : drag.hx, k * 0.5);
+    spoolPose.y = lerp(spoolPose.y, drag.on ? 0 : drag.hy, k * 0.5);
+    return { ry: drag.ry + spoolPose.x * 0.5, rx: drag.rx - spoolPose.y * 0.4, spin: 0, roll: 0 };
+  }
+  const inView = (el) => { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; };
   function spoolUpdate(y, time, travelVisible) {
     if (!spool3d) return;
     const inMats = y > matST.start - vh() * 1.05 && y < matST.end + vh() * 1.05;
-    if (!inMats && !travelVisible) return;
-    hostSpool(inMats ? 'mats' : 'travel');
+    const inViewer = !inMats && !travelVisible && viewerStage && inView(viewerStage);
+    if (!inMats && !travelVisible && !inViewer) return;
+    hostSpool(inMats ? 'mats' : inViewer ? 'viewer' : 'travel');
     // Frame-rate independent easing towards pointer and colour targets.
     const k = 1 - Math.exp(-Math.min(0.1, time - spoolPose.t || 0) * 7);
     spoolPose.t = time;
-    spoolPose.x = lerp(spoolPose.x, spoolPose.tx, k * 0.5);
-    spoolPose.y = lerp(spoolPose.y, spoolPose.ty, k * 0.5);
+    if (!inViewer) {
+      spoolPose.x = lerp(spoolPose.x, spoolPose.tx, k * 0.5);
+      spoolPose.y = lerp(spoolPose.y, spoolPose.ty, k * 0.5);
+    }
     const m = inMats ? MATERIALS[Math.max(0, matIndex)] : null;
     spoolPose.rgb = mixRgb(spoolPose.rgb, m ? rgbOf(m.colour) : YELLOW, k);
     spoolPose.matte = lerp(spoolPose.matte, m && m.matte ? 1 : 0, k);
     // At rest it only sways a little, so the wordmark reads; scroll does the turning.
     const idle = Math.sin(time * 0.6) * 0.06;
     let pose;
-    if (inMats) {
+    if (inViewer) {
+      pose = viewerPose(time, k);
+    } else if (inMats) {
       const p = (y - matST.start) / Math.max(1, matST.end - matST.start);
-      pose = { ry: lerp(-0.85, 0.65, clamp01(p)), rx: 0.06, spin: -p * TAU * 1.25 - idle, roll: 0 };
+      pose = { ry: lerp(-0.85, 0.65, clamp01(p)), rx: 0.06 + Math.sin(clamp01(p) * TAU) * 0.32, spin: -p * TAU * 1.25 - idle, roll: 0 };
     } else {
+      // Hero → About: one full turn round the vertical axis while it tips forward
+      // and back, so every side of the spool shows on the way down.
       const t = ease(range(y, 0, aboutST.start)), u = y / innerHeight;
       pose = {
-        ry: lerp(-0.86, 0.55, t) + spoolPose.x * 0.3,
-        rx: lerp(0.14, -0.04, t) - spoolPose.y * 0.16,
+        ry: lerp(-0.86, 0.55 + TAU, t) + spoolPose.x * 0.3,
+        rx: lerp(0.14, -0.04, t) + Math.sin(t * TAU) * 0.6 - spoolPose.y * 0.16,
         spin: -u * 1.4 - idle,
         roll: Math.sin(u * 1.6) * 0.05,
       };
@@ -1684,6 +1735,7 @@ function initMotion() {
   revealHeading($('#proof-title'), sections.proof, 'top 75%');
   revealHeading($('#range-title'), sections.range, 'top 75%');
   revealHeading($('#final-title'), sections.final, 'top 60%');
+  revealHeading($('#viewer-title'), $('#up-close'), 'top 75%');
 
   const colourReveal = gsap.timeline({ paused: true })
     .add(revealHeading($('#colour-title')), 0)
