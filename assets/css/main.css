@@ -460,7 +460,7 @@ html.static .spool-travel { display: none; }
   padding: clamp(24px, 2.4vw, 40px); min-height: 360px;
   display: flex; flex-direction: column; justify-content: flex-end;
 }
-.tile--head { grid-column: span 7; background: none; border: 0; padding-left: 0; justify-content: flex-start; min-height: 0; padding-top: 0; }
+.tile--head { grid-column: span 7; background: none; border: 0; border-radius: 0; overflow: visible; padding-left: 0; justify-content: flex-start; min-height: 0; padding-top: 0; }
 .tile--head .label { color: var(--dim); margin-bottom: 22px; }
 .tile--dim { grid-column: span 5; grid-row: span 2; }
 .tile--wind { grid-column: span 4; min-height: 440px; }
@@ -678,7 +678,7 @@ html.js:not(.ready) .ahero__copy { opacity: 0; }
   .mats__head > .label { margin-bottom: 12px; }
   .mats__head .lede { display: none; }
   .mats__head .display { font-size: clamp(34px, 9.6vw, 60px); }
-  .mats__spool { left: 50%; top: calc(var(--nav-h) + 22svh); transform: translateX(-50%); width: min(40vw, 21svh); }
+  .mats__spool { left: 50%; top: auto; bottom: calc(116px + min(40svh, 330px) + 14px); transform: translateX(-50%); width: min(34vw, 16svh); }
   .mats__panel { left: var(--pad); right: var(--pad); top: auto; bottom: 116px; width: auto; min-height: 0; height: min(40svh, 330px); }
   .mat { padding: 26px 24px; justify-content: flex-start; }
   .mat__name { font-size: clamp(36px, 10vw, 56px); margin-bottom: 10px; }
@@ -725,10 +725,13 @@ html.js:not(.ready) .ahero__copy { opacity: 0; }
 
   .range__head { flex-direction: column; align-items: flex-start; gap: 22px; }
   .grid { grid-template-columns: 1fr; }
+  .card__desc { max-width: none; }
 
   .final { padding: 16svh 0; min-height: 0; }
   .foot__in { grid-template-columns: 1fr 1fr; }
   .foot__brand { grid-column: 1 / -1; }
+  .foot__col { gap: 0; }
+  .foot__col a { padding: 10px 0; }
 
   .ahero__copy { padding-bottom: 10svh; }
   .story-grid, .creators { grid-template-columns: 1fr; }
@@ -740,6 +743,10 @@ html.js:not(.ready) .ahero__copy { opacity: 0; }
   .values li, .values li:nth-child(3) { padding: 30px 0; border-left: 0; border-top: 1px solid var(--line); }
   .values li:first-child { border-top: 0; padding-top: 0; }
   .values svg { width: 52px; height: 52px; margin-bottom: 20px; }
+}
+
+@media (max-width: 900px) and (orientation: portrait) and (max-height: 740px), (max-width: 640px) and (max-height: 740px) {
+  .mats__spool { display: none; }
 }
 
 @media (max-width: 400px) {
