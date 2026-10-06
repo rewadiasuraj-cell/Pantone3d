@@ -709,7 +709,7 @@ const APPLICATIONS = [
   { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', icon: 'flower', colour: 'red' },
 ];
 
-const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261005h`;
+const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261006c`;
 /* Close-up of the wound filament, cropped from the same product photography. */
 const texSrc = (colour) => `assets/img/tex-${colour}.webp`;
 
@@ -798,7 +798,7 @@ function initSite({ getLenis = () => null } = {}) {
  * Nothing here runs unless spool3DSupported() says the device can take it; the
  * product photos stay in place underneath as the fallback.
  */
-const VERSION = '20261005s';
+const VERSION = '20261006c';
 const VENDOR = 'assets/vendor/three-spool.min.js?v=' + VERSION;
 const MODEL = 'assets/models/spool.glb?v=' + VERSION;
 const DIAMETER = 0.2; // model units are metres: a 200 mm spool
@@ -1412,24 +1412,28 @@ function initMotion() {
     { st: aboutST, state: aboutState },
     { st: storyST, state: storyState, update: storyUpdate },
     { st: matST, state: matsState, update: matsUpdate },
-    { st: colourST, state: colourState, update: colourUpdate },
+    // On phones the colour section starts opening while it scrolls in, so no screen is left empty.
+    { st: colourST, state: colourState, update: colourUpdate, lead: () => (isMobile() ? vh() * 0.4 : 0) },
     { st: buildST, state: emptyState },
     { st: proofST, state: emptyState },
     { st: appsST, state: appsState, update: appsUpdate },
     { st: rangeST, state: emptyState },
   ];
 
+  const startOf = (s) => s.st.start - (s.lead ? s.lead() : 0);
   function stateAt(y) {
     for (let k = 0; k < timeline.length; k++) {
-      const s = timeline[k], st = s.st;
-      const span = Math.max(1, st.end - st.start);
-      if (y < st.start) {
+      const s = timeline[k], st = s.st, start = startOf(s);
+      const span = Math.max(1, st.end - start);
+      if (y < start) {
         if (k === 0) return s.state(0);
         const prev = timeline[k - 1];
-        const t = range(y, prev.st.end, st.start);
+        let t = range(y, prev.st.end, start);
+        // Phones stack the strand stage behind the next heading, so the old form clears early.
+        if (isMobile()) t = range(t, 0, 0.35);
         return blend(prev.state(1), s.state(0), ease(t));
       }
-      if (y <= st.end) return s.state((y - st.start) / span);
+      if (y <= st.end) return s.state((y - start) / span);
     }
     return emptyState();
   }
@@ -1460,8 +1464,9 @@ function initMotion() {
     const y = scrollY;
     timeline.forEach((s) => {
       if (!s.update) return;
-      const p = clamp01((y - s.st.start) / Math.max(1, s.st.end - s.st.start));
-      if (y >= s.st.start - vh() && y <= s.st.end + vh()) s.update(p, y);
+      const start = startOf(s);
+      const p = clamp01((y - start) / Math.max(1, s.st.end - start));
+      if (y >= start - vh() && y <= s.st.end + vh()) s.update(p, y);
     });
     spoolUpdate(y, time, travelUpdate(y));
     const S = stateAt(y);
@@ -1489,7 +1494,13 @@ function initMotion() {
     .to([heroEyebrow, heroLede, heroCtas], { y: -30, opacity: 0, duration: 0.4, stagger: 0.04 }, 0)
     .to(heroCue, { opacity: 0, duration: 0.1 }, 0)
     .to('.hero__floor', { opacity: 0, duration: 0.12 }, 0);
-  function heroUpdate(p) { if (heroScroll.progress() !== p) heroScroll.progress(p); }
+  let introTl = null;
+  function heroUpdate(p) {
+    // Scrolling before the intro has finished: finish it now, or its late tweens bring
+    // the faded copy (the CTAs especially) back while the hero is scrolling away.
+    if (p > 0 && introTl && introTl.isActive()) { introTl.progress(1); heroScroll.invalidate().progress(0); }
+    if (heroScroll.progress() !== p) heroScroll.progress(p);
+  }
 
   if (finePointer) {
     const rx = gsap.quickTo(heroImg, 'rotationX', { duration: 1.4, ease: 'power3.out' });
@@ -1664,7 +1675,9 @@ function initMotion() {
       scrollTrigger: trigger ? { trigger, start, toggleActions: 'play none none none' } : undefined,
     });
   }
-  revealHeading($('#about-title'), sections.about, 'top 55%');
+  // On phones the travelling spool crosses the About heading, so About copy waits until the spool has landed.
+  const aboutStart = (desk) => () => (isMobile() ? 'top 12%' : desk);
+  revealHeading($('#about-title'), sections.about, aboutStart('top 55%'));
   revealHeading($('#story-title'), sections.story, 'top 55%');
   revealHeading($('#mats-title'), sections.mats, 'top 55%');
   revealHeading($('#build-title'), sections.build, 'top 50%');
@@ -1677,7 +1690,7 @@ function initMotion() {
     .from('.colour__head .label, .colour__head .lede, .colour__head .btn', { opacity: 0, y: 18, duration: 0.9, stagger: 0.08, ease: 'power3.out' }, 0.2)
     .from('.colour__pick', { opacity: 0, y: 20, duration: 0.9, ease: 'power3.out' }, 0.35)
     .from('.sw', { opacity: 0, y: 14, duration: 0.7, stagger: 0.04, ease: 'power3.out' }, 0.4);
-  gsap.from('.about__copy > .label, .about__copy .lede, .proofs li, .about .link, .about__aside', { opacity: 0, y: 18, duration: 1, stagger: 0.08, ease: 'power3.out', scrollTrigger: { trigger: sections.about, start: 'top 45%' } });
+  gsap.from('.about__copy > .label, .about__copy .lede, .proofs li, .about .link, .about__aside', { opacity: 0, y: 18, duration: 1, stagger: 0.08, ease: 'power3.out', scrollTrigger: { trigger: sections.about, start: aboutStart('top 45%') } });
   gsap.from('.build__top, .build__head .lede', { opacity: 0, y: 16, duration: 1, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: sections.build, start: 'top 60%' } });
   gsap.from('.step', { opacity: 0, y: 40, duration: 1.1, stagger: 0.12, ease: 'power3.out', scrollTrigger: { trigger: '.steps', start: 'top 80%' } });
   // The cards play the journey as you scroll through them: the bead lays down,
@@ -1717,7 +1730,9 @@ function initMotion() {
     const ux0 = lr.left - sr.left, ux1 = lr.right - sr.left, uy = lr.bottom - sr.top + Math.max(10, lr.height * 0.06);
     const hx = Math.min(W - 60, hr.right - sr.left + W * 0.06), sy = H * 0.2;
     // enters from the right edge, stays clear of the heading, then underlines the last word
-    const d = `M ${W + 20} ${sy} C ${W * 0.8} ${sy + 20}, ${hx + 40} ${uy - H * 0.2}, ${hx} ${uy - 20} S ${ux1 + 40} ${uy}, ${ux1} ${uy} L ${ux0} ${uy}`;
+    const d = isMobile()
+      ? `M ${W + 20} ${uy + 34} C ${W - 40} ${uy + 30}, ${ux1 + 50} ${uy}, ${ux1} ${uy} L ${ux0} ${uy}`
+      : `M ${W + 20} ${sy} C ${W * 0.8} ${sy + 20}, ${hx + 40} ${uy - H * 0.2}, ${hx} ${uy - 20} S ${ux1 + 40} ${uy}, ${ux1} ${uy} L ${ux0} ${uy}`;
     const w = isMobile() ? 6 : 9;
     fPaths.forEach((p, i) => {
       p.setAttribute('d', d);
@@ -1759,7 +1774,7 @@ function initMotion() {
   root.classList.add('ready');
   const top = scrollY < 20;
   const at0 = (t) => (top ? t : 0);
-  gsap.timeline({ delay: 0.1 })
+  introTl = gsap.timeline({ delay: 0.1 })
     .from(nav, { opacity: 0, y: -12, duration: 1, ease: 'power3.out' }, 0)
     .from(heroEyebrow, { opacity: 0, y: 12, duration: 0.9, ease: 'power3.out' }, at0(0.2))
     .from(heroSplit, { yPercent: 110, duration: 1.3, stagger: 0.12, ease: 'power4.out' }, at0(0.35))

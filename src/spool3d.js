@@ -7,7 +7,7 @@
  * Nothing here runs unless spool3DSupported() says the device can take it; the
  * product photos stay in place underneath as the fallback.
  */
-const VERSION = '20261005s';
+const VERSION = '20261006c';
 const VENDOR = 'assets/vendor/three-spool.min.js?v=' + VERSION;
 const MODEL = 'assets/models/spool.glb?v=' + VERSION;
 const DIAMETER = 0.2; // model units are metres: a 200 mm spool
