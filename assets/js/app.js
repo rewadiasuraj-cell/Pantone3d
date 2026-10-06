@@ -709,7 +709,7 @@ const APPLICATIONS = [
   { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', icon: 'flower', colour: 'red' },
 ];
 
-const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261006b`;
+const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261006c`;
 /* Close-up of the wound filament, cropped from the same product photography. */
 const texSrc = (colour) => `assets/img/tex-${colour}.webp`;
 
@@ -788,6 +788,123 @@ function initSite({ getLenis = () => null } = {}) {
   return { nav, menu, setMenu };
 }
 
+/* ---- spool3d.js ---- */
+/* Pantone3D — the real 3D spool.
+ *
+ * Loads a trimmed three.js build and the compressed spool model on demand and
+ * draws them into one small transparent canvas. The page decides where that
+ * canvas sits (it is moved between the hero/About travel box and the Materials
+ * stage) and sets the pose and filament colour every frame from scroll.
+ * Nothing here runs unless spool3DSupported() says the device can take it; the
+ * product photos stay in place underneath as the fallback.
+ */
+const VERSION = '20261006c';
+const VENDOR = 'assets/vendor/three-spool.min.js?v=' + VERSION;
+const MODEL = 'assets/models/spool.glb?v=' + VERSION;
+const DIAMETER = 0.2; // model units are metres: a 200 mm spool
+const FOV = 20;
+
+function spool3DSupported(mobile) {
+  if (location.protocol === 'file:') return false;
+  const c = navigator.connection;
+  if (c && (c.saveData || /2g|3g/.test(c.effectiveType || ''))) return false;
+  if (mobile && ((navigator.deviceMemory || 4) < 4 || (navigator.hardwareConcurrency || 4) < 4)) return false;
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2');
+    if (!gl) return false;
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return true;
+  } catch (e) { return false; }
+}
+
+async function loadSpool3D({ dpr = 2 } = {}) {
+  const url = (p) => new URL(p, document.baseURI).href;
+  const T = await import(url(VENDOR));
+
+  const canvas = document.createElement('canvas');
+  canvas.className = 'spool3d';
+  canvas.setAttribute('aria-hidden', 'true');
+  // High-density screens are sharp enough without MSAA, and skipping it is cheaper.
+  const renderer = new T.WebGLRenderer({ canvas, alpha: true, antialias: (devicePixelRatio || 1) < 2, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, dpr));
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = T.SRGBColorSpace;
+  // No tone mapping: it would pale the filament towards white in the highlights.
+
+  const scene = new T.Scene();
+  // Studio lighting, set per material (scene.environment would override each
+  // material's intensity with one value for all).
+  const pmrem = new T.PMREMGenerator(renderer);
+  const studio = pmrem.fromScene(new T.RoomEnvironment(), 0.04).texture;
+  pmrem.dispose();
+  // A soft key from the upper left, like the product photography.
+  const key = new T.DirectionalLight(0xffffff, 1.5);
+  key.position.set(-1.2, 1.4, 1.6);
+  scene.add(key);
+  // A rim from behind on the right picks the flange edges out of the dark page.
+  const rim = new T.DirectionalLight(0xffffff, 2.2);
+  rim.position.set(1.6, 0.9, -1.1);
+  scene.add(rim);
+
+  const camera = new T.PerspectiveCamera(FOV, 1, 0.05, 10);
+  camera.position.set(0, 0, 1);
+
+  const gltf = await new T.GLTFLoader().setMeshoptDecoder(T.MeshoptDecoder).loadAsync(url(MODEL));
+  const model = gltf.scene;
+  const centre = new T.Box3().setFromObject(model).getCenter(new T.Vector3());
+  model.position.sub(centre);
+  const filament = [];
+  model.traverse((o) => {
+    if (!o.isMesh) return;
+    const m = o.material, isFilament = m.name === 'Yellow_Filament';
+    m.envMap = studio;
+    // Turn the studio so its bright wall sits behind the spool: face-on, the
+    // flange then reflects the dark side. Keep the matte black plastic's
+    // reflections faint so it never reads grey.
+    m.envMapRotation.set(0, Math.PI, 0);
+    m.envMapIntensity = isFilament ? 1.25 : 0.35;
+    if (isFilament) filament.push(m);
+  });
+
+  // lean (screen plane) > pivot (turn + tilt) > spinner (around the axle) > model
+  const lean = new T.Group(), pivot = new T.Group(), spinner = new T.Group();
+  pivot.rotation.order = 'YXZ';
+  spinner.add(model); pivot.add(spinner); lean.add(pivot); scene.add(lean);
+
+  let w = 0, h = 0, dia = 0, last = '';
+  const colour = new T.Color();
+
+  // Canvas size in CSS px, and how many px the flange diameter should span.
+  function size(cw, ch, diameterPx) {
+    cw = Math.max(1, Math.round(cw)); ch = Math.max(1, Math.round(ch));
+    if (cw === w && ch === h && diameterPx === dia) return;
+    w = cw; h = ch; dia = diameterPx;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    const viewH = 2 * Math.tan((FOV * Math.PI) / 360) * camera.position.z;
+    lean.scale.setScalar((dia / h) * viewH / DIAMETER);
+    last = '';
+  }
+
+  // matte: 0 glossy filament … 1 matte (Matte PLA, Carbon Fiber).
+  function render({ ry = 0, rx = 0, spin = 0, roll = 0, rgb = [255, 255, 255], matte = 0 } = {}) {
+    const k = [ry, rx, spin, roll, matte].map((v) => v.toFixed(4)).join() + rgb.map(Math.round).join() + w + 'x' + h;
+    if (k === last) return;
+    last = k;
+    colour.setRGB(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, T.SRGBColorSpace);
+    filament.forEach((m) => { m.color.copy(colour); m.roughness = 0.4 + matte * 0.4; });
+    pivot.rotation.set(rx, ry, 0);
+    spinner.rotation.z = spin;
+    lean.rotation.z = roll;
+    renderer.render(scene, camera);
+  }
+
+  // Compile shaders and upload buffers now, not on the first scrolled frame.
+  renderer.compile(scene, camera);
+  return { canvas, size, render };
+}
+
 /* ---- main.js ---- */
 /* Pantone3D — landing page choreography.
  *
@@ -798,6 +915,7 @@ function initSite({ getLenis = () => null } = {}) {
  * A second canvas above the page carries only the parts of the strand that
  * pass in front of a product.
  */
+
 
 
 
@@ -1350,7 +1468,7 @@ function initMotion() {
       const p = clamp01((y - start) / Math.max(1, s.st.end - start));
       if (y >= start - vh() && y <= s.st.end + vh()) s.update(p, y);
     });
-    travelUpdate(y);
+    spoolUpdate(y, time, travelUpdate(y));
     const S = stateAt(y);
     applyEnv(S.env);
     const back = [], fr = [];
@@ -1392,6 +1510,7 @@ function initMotion() {
       if (scrollY > heroST.end) return;
       const nx = e.clientX / innerWidth - 0.5, ny = e.clientY / innerHeight - 0.5;
       ry(nx * 3); rx(-ny * 2.4); tx(nx * 8); // ≤ 1.5° / 1.2°
+      spoolPose.tx = nx; spoolPose.ty = ny;
     });
   }
 
@@ -1413,19 +1532,139 @@ function initMotion() {
   }
   let travelOn = null;
   function travelUpdate(y) {
-    if (!T) return;
-    const on = y > 2;
+    if (!T) return false;
+    // With the 3D spool live, the travel box carries it from the very top.
+    const on = y > 2 || !!spool3d;
     if (on !== travelOn) { travelOn = on; travel.style.visibility = on ? 'visible' : 'hidden'; heroWrap.style.visibility = on ? 'hidden' : 'visible'; }
-    if (!on) return;
+    if (!on) return false;
     const a0 = aboutST.start, a1 = aboutST.end;
     const t = ease(range(y, 0, a0));
     const x = lerp(T.hero.x, T.about.x, t);
     const top = lerp(T.hero.y, T.about.y, t) + (y > a1 ? a1 - y : 0);
-    if (top < -T.hero.h * 1.2) { travel.style.opacity = '0'; return; }
+    if (top < -T.hero.h * 1.2) { travel.style.opacity = '0'; return false; }
     travel.style.opacity = '1';
     travel.style.transform = `translate3d(${x.toFixed(1)}px, ${top.toFixed(1)}px, 0)`;
     const lean = Math.sin((y / innerHeight) * 1.6) * 7;
     travelPhoto.style.transform = `rotate(${lean.toFixed(2)}deg)`;
+    return true;
+  }
+
+  // The real 3D spool. It loads after the page and takes over from the photos
+  // (hero → About, then the Materials stage) once it can draw; the photos stay
+  // as the fallback for reduced motion, no WebGL 2, file:// and low-end or
+  // data-saving phones. Scroll turns it, rolls it on its axle and, in
+  // Materials, rewinds it in the selected material's colour.
+  const matsStage = $('.mats__spool');
+  const viewerStage = $('[data-viewer]');
+  const spoolPose = { x: 0, y: 0, tx: 0, ty: 0, rgb: [...YELLOW], matte: 0, t: 0 };
+  let spool3d = null, spoolHost = null;
+  function sizeSpool() {
+    if (!spool3d || !spoolHost) return;
+    if (spoolHost === 'viewer') {
+      // The panel canvas fills its box; the spool stays clear of the edges at any angle.
+      const bw = viewerStage.offsetWidth, bh = viewerStage.offsetHeight;
+      spool3d.size(bw, bh, Math.min(bw, bh) * 0.7);
+      return;
+    }
+    const el = spoolHost === 'mats' ? matsStage : travel;
+    // offsetWidth/Height ignore the intro scale tweens, which the canvas inherits anyway.
+    const bw = el.offsetWidth, bh = el.offsetHeight;
+    spool3d.size(bw * 1.4, bh * 1.3, bh * 1.03);
+  }
+  const hostEl = { mats: matsStage, viewer: viewerStage, travel };
+  function hostSpool(where) {
+    if (where === spoolHost) return;
+    spoolHost = where;
+    hostEl[where].appendChild(spool3d.canvas);
+    sizeSpool();
+  }
+
+  // Up Close panel: drag (mouse or touch) turns the spool on both axes, with a
+  // little momentum; hovering tilts it towards the pointer; left alone it turns slowly.
+  const drag = { ry: -0.6, rx: 0.12, vy: 0, vx: 0, hx: 0, hy: 0, on: false, px: 0, py: 0, idleAt: 0 };
+  if (viewerStage) {
+    viewerStage.addEventListener('pointerdown', (e) => {
+      drag.on = true; drag.px = e.clientX; drag.py = e.clientY; drag.vx = drag.vy = 0;
+      viewerStage.setPointerCapture(e.pointerId); viewerStage.classList.add('is-dragging');
+    });
+    viewerStage.addEventListener('pointermove', (e) => {
+      const r = viewerStage.getBoundingClientRect();
+      drag.hx = (e.clientX - r.left) / r.width - 0.5; drag.hy = (e.clientY - r.top) / r.height - 0.5;
+      if (!drag.on) return;
+      const dx = e.clientX - drag.px, dy = e.clientY - drag.py;
+      drag.px = e.clientX; drag.py = e.clientY;
+      drag.vy = dx * 0.012; drag.vx = dy * 0.012;
+      drag.ry += drag.vy; drag.rx = Math.max(-1.3, Math.min(1.3, drag.rx + drag.vx));
+    });
+    const end = () => { drag.on = false; drag.idleAt = performance.now() / 1000; viewerStage.classList.remove('is-dragging'); };
+    viewerStage.addEventListener('pointerup', end);
+    viewerStage.addEventListener('pointercancel', end);
+    viewerStage.addEventListener('pointerleave', () => { if (!drag.on) { drag.hx = 0; drag.hy = 0; } });
+  }
+  function viewerPose(time, k) {
+    if (!drag.on) {
+      // Momentum, then a slow turn once the hand has been away for a moment.
+      drag.vy *= 0.92; drag.vx *= 0.92;
+      drag.ry += drag.vy; drag.rx = Math.max(-1.3, Math.min(1.3, drag.rx + drag.vx));
+      if (time - drag.idleAt > 1.5 && Math.abs(drag.vy) < 0.002) drag.ry += 0.0045;
+      drag.rx = lerp(drag.rx, 0.12, 0.004);
+    }
+    spoolPose.x = lerp(spoolPose.x, drag.on ? 0 : drag.hx, k * 0.5);
+    spoolPose.y = lerp(spoolPose.y, drag.on ? 0 : drag.hy, k * 0.5);
+    return { ry: drag.ry + spoolPose.x * 0.5, rx: drag.rx - spoolPose.y * 0.4, spin: 0, roll: 0 };
+  }
+  const inView = (el) => { const r = el.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; };
+  function spoolUpdate(y, time, travelVisible) {
+    if (!spool3d) return;
+    const inMats = y > matST.start - vh() * 1.05 && y < matST.end + vh() * 1.05;
+    const inViewer = !inMats && !travelVisible && viewerStage && inView(viewerStage);
+    if (!inMats && !travelVisible && !inViewer) return;
+    hostSpool(inMats ? 'mats' : inViewer ? 'viewer' : 'travel');
+    // Frame-rate independent easing towards pointer and colour targets.
+    const k = 1 - Math.exp(-Math.min(0.1, time - spoolPose.t || 0) * 7);
+    spoolPose.t = time;
+    if (!inViewer) {
+      spoolPose.x = lerp(spoolPose.x, spoolPose.tx, k * 0.5);
+      spoolPose.y = lerp(spoolPose.y, spoolPose.ty, k * 0.5);
+    }
+    const m = inMats ? MATERIALS[Math.max(0, matIndex)] : null;
+    spoolPose.rgb = mixRgb(spoolPose.rgb, m ? rgbOf(m.colour) : YELLOW, k);
+    spoolPose.matte = lerp(spoolPose.matte, m && m.matte ? 1 : 0, k);
+    // At rest it only sways a little, so the wordmark reads; scroll does the turning.
+    const idle = Math.sin(time * 0.6) * 0.06;
+    let pose;
+    if (inViewer) {
+      pose = viewerPose(time, k);
+    } else if (inMats) {
+      const p = (y - matST.start) / Math.max(1, matST.end - matST.start);
+      pose = { ry: lerp(-0.85, 0.65, clamp01(p)), rx: 0.06 + Math.sin(clamp01(p) * TAU) * 0.32, spin: -p * TAU * 1.25 - idle, roll: 0 };
+    } else {
+      // Hero → About: one full turn round the vertical axis while it tips forward
+      // and back, so every side of the spool shows on the way down.
+      const t = ease(range(y, 0, aboutST.start)), u = y / innerHeight;
+      pose = {
+        ry: lerp(-0.86, 0.55 + TAU, t) + spoolPose.x * 0.3,
+        rx: lerp(0.14, -0.04, t) + Math.sin(t * TAU) * 0.6 - spoolPose.y * 0.16,
+        spin: -u * 1.4 - idle,
+        roll: Math.sin(u * 1.6) * 0.05,
+      };
+    }
+    pose.rgb = spoolPose.rgb;
+    pose.matte = spoolPose.matte;
+    spool3d.render(pose);
+    if (!root.classList.contains('has-3d')) requestAnimationFrame(() => spool3d && root.classList.add('has-3d'));
+  }
+  if (spool3DSupported(isMobile())) {
+    const start = () => loadSpool3D({ dpr: isMobile() ? 1.5 : 2 }).then((s) => {
+      s.canvas.addEventListener('webglcontextlost', () => {
+        root.classList.remove('has-3d'); s.canvas.remove(); spool3d = null; spoolHost = null; travelOn = null;
+      });
+      spool3d = s;
+      travelOn = null;
+    }).catch((e) => console.warn('3D spool unavailable; keeping the photos.', e));
+    // After the page (and its hero photo) has loaded, so the model never competes with first paint.
+    if (document.readyState === 'complete') setTimeout(start, 200);
+    else addEventListener('load', () => setTimeout(start, 200));
   }
 
   // Story
@@ -1496,6 +1735,7 @@ function initMotion() {
   revealHeading($('#proof-title'), sections.proof, 'top 75%');
   revealHeading($('#range-title'), sections.range, 'top 75%');
   revealHeading($('#final-title'), sections.final, 'top 60%');
+  revealHeading($('#viewer-title'), $('#up-close'), 'top 75%');
 
   const colourReveal = gsap.timeline({ paused: true })
     .add(revealHeading($('#colour-title')), 0)
@@ -1574,7 +1814,7 @@ function initMotion() {
 
   // ---------------------------------------------------------------- lifecycle
   ScrollTrigger.addEventListener('refreshInit', () => { lastH = -9999; });
-  ScrollTrigger.addEventListener('refresh', () => { measure(); layoutFinal(); applyFinal(); measureTravel(); travelOn = null; });
+  ScrollTrigger.addEventListener('refresh', () => { measure(); layoutFinal(); applyFinal(); measureTravel(); travelOn = null; sizeSpool(); });
   measure();
   measureTravel();
   layoutFinal();
