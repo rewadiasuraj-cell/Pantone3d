@@ -709,7 +709,7 @@ const APPLICATIONS = [
   { name: 'Creative Printing', note: 'Sculptural forms, décor and experiments.',           shape: 'organic', icon: 'flower', colour: 'red' },
 ];
 
-const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261006a`;
+const spoolSrc = (colour, small = false) => `assets/img/spool-${colour}${small ? '-sm' : ''}.webp?v=20261006b`;
 /* Close-up of the wound filament, cropped from the same product photography. */
 const texSrc = (colour) => `assets/img/tex-${colour}.webp`;
 
