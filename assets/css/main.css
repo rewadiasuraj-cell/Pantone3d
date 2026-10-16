@@ -214,7 +214,7 @@ main, .foot { position: relative; z-index: 2; }
 .nav.is-solid { background: rgba(8, 8, 8, .58); -webkit-backdrop-filter: blur(14px) saturate(1.2); backdrop-filter: blur(14px) saturate(1.2); border-bottom-color: rgba(255,255,255,.06); }
 .nav[data-theme="light"], html[data-mode="light"] .nav { color: var(--ink); }
 .nav[data-theme="light"].is-solid, html[data-mode="light"] .nav.is-solid { background: rgba(245, 244, 239, .72); border-bottom-color: rgba(0,0,0,.06); }
-.nav__logo { position: relative; width: clamp(122px, 9.5vw, 156px); flex: none; }
+.nav__logo { position: relative; width: clamp(132px, 10.5vw, 172px); flex: none; }
 .logo { width: 100%; transition: opacity .5s var(--ease); }
 .logo--dark { position: absolute; inset: 0; opacity: 0; }
 .nav[data-theme="light"] .logo--light, html[data-mode="light"] .logo--light { opacity: 0; }
@@ -579,6 +579,7 @@ html[data-mode="light"] .viewer__panel { background: radial-gradient(120% 90% at
 .foot__in { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 40px; padding-top: 72px; padding-bottom: 40px; }
 .foot__brand p { color: var(--dim); font-size: 14px; margin-top: 18px; }
 .foot__logo { width: 156px; }
+.foot__logo--dark { display: none; }
 .foot__col { display: grid; gap: 10px; align-content: start; font-size: 15px; }
 .foot__col .label { color: var(--dim); margin-bottom: 6px; }
 .foot__col a { width: fit-content; color: var(--muted); transition: color .3s; }
@@ -903,6 +904,7 @@ html[data-mode="light"] .card__obj { filter: drop-shadow(0 16px 18px rgba(0,0,0,
 html[data-mode="light"] .arrow { border-color: rgba(11,11,11,.3); }
 html[data-mode="light"] .arrow:hover, html[data-mode="light"] .arrow:focus-visible, html[data-mode="light"] .card:hover .arrow { background: var(--ink); color: var(--off); border-color: var(--ink); }
 html[data-mode="light"] .dots i { box-shadow: inset 0 0 0 1px rgba(0,0,0,.2); }
-html[data-mode="light"] .foot__logo { filter: invert(1); }
+html[data-mode="light"] .foot__logo:not(.foot__logo--dark) { display: none; }
+html[data-mode="light"] .foot__logo--dark { display: block; }
 html[data-mode="light"].static .nav.is-solid { background: rgba(245,244,239,.9); }
 html[data-mode="light"] .tile__spool { filter: drop-shadow(0 18px 20px rgba(0,0,0,.22)); }
